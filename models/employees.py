@@ -7,7 +7,7 @@ from middleware.helpers import validate_phone, validate_date, validate_id_number
 class EmployeeBase(BaseModel):
     employee_name: str = Field(max_length=150)
     email: str = Field(max_length=255)
-    password: str
+    password: Optional[str] = None
     dob: date
     address: str
     phone_no: str = Field(max_length=15)
@@ -19,8 +19,8 @@ class EmployeeBase(BaseModel):
 
     @field_validator('password')
     @classmethod
-    def check_password(cls, v: str) -> str:
-        if not validate_password(v):
+    def check_password(cls, v: Optional[str]) -> Optional[str]:
+        if v and not validate_password(v):
             raise ValueError('Password must be between 6 and 100 characters')
         return v
 

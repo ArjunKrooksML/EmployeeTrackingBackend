@@ -42,10 +42,12 @@ def _handle_db_err(e: Exception, desig_id: Optional[int] = None) -> None:
 def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
     val_desig_id(data.designation_id, db)
     id_type = _get_enum_val(db, norm_id_type(data.id_type))
+    # Generate random password if one wasn't provided
+    pwd = data.password or _gen_def_pwd(data.email)
     emp = EmployeeDB(
         employee_name=data.employee_name,
         email=data.email,
-        password=hash_pwd(data.password),
+        password=hash_pwd(pwd),
         dob=data.dob,
         address=data.address,
         phone_no=data.phone_no,
