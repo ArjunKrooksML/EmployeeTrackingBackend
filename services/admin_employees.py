@@ -36,6 +36,12 @@ def _handle_db_err(e: Exception, desig_id: Optional[int] = None) -> None:
     err_msg = str(e).lower()
     if "foreign key constraint" in err_msg and "designation_id" in err_msg:
         raise HTTPException(status_code=400, detail=f"Designation ID {desig_id} does not exist")
+    if "unique constraint" in err_msg:
+        if "employees_email_key" in err_msg:
+            raise HTTPException(status_code=400, detail="An employee with this email already exists")
+        if "employees_id_number_key" in err_msg:
+            raise HTTPException(status_code=400, detail="An employee with this ID number already exists")
+        raise HTTPException(status_code=400, detail="Duplicate record exists.")
     raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
@@ -61,6 +67,8 @@ def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
         db.add(emp)
         db.commit()
         db.refresh(emp)
+        # Add generated password to response payload dynamically
+        emp.generated_password = pwd
         return emp
     except Exception as e:
         db.rollback()

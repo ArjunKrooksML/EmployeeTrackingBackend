@@ -217,6 +217,7 @@ class EmployeeResponse(BaseModel):
     salary: int
     created_at: datetime
     updated_at: datetime
+    generated_password: Optional[str] = None
 
     class Config:
         from_attributes = True
