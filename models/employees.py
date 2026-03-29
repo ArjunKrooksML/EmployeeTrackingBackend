@@ -16,6 +16,7 @@ class EmployeeBase(BaseModel):
     designation_id: Optional[int] = None
     year_joined: Optional[str] = Field(max_length=10, default=None)
     salary: int
+    role: Optional[str] = 'employee'
 
     @field_validator('password')
     @classmethod
@@ -150,6 +151,7 @@ class EmployeeUpdate(BaseModel):
     designation_id: Optional[int] = None
     year_joined: Optional[str] = Field(max_length=10, default=None)
     salary: Optional[int] = None
+    role: Optional[str] = None
 
     @field_validator('password')
     @classmethod
@@ -215,6 +217,7 @@ class EmployeeResponse(BaseModel):
     designation_id: Optional[int] = None
     year_joined: Optional[str] = None
     salary: int
+    role: str = 'employee'
     created_at: datetime
     updated_at: datetime
     generated_password: Optional[str] = None
@@ -240,6 +243,7 @@ class EmployeePublic(BaseModel):
     designation_id: Optional[int] = None
     year_joined: Optional[str] = None
     salary: int
+    role: str = 'employee'
 
     class Config:
         from_attributes = True

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Text, DateTime, Boolean, BigInteger, Time, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Date, Text, DateTime, Boolean, BigInteger, Time, Float, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import ENUM
 from .connection import Base
@@ -19,6 +19,8 @@ class Employee(Base):
     designation_id = Column(Integer, nullable=True)
     year_joined = Column(String(10), nullable=True)
     salary = Column(Integer, nullable=False)
+    # role: employee | senior | hr | gm
+    role = Column(String(20), nullable=False, server_default='employee')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -70,5 +72,8 @@ class Attendance(Base):
     attendance = Column(ENUM('present', 'absent', 'late', name='attendance_status', create_type=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     checkin = Column(Time, nullable=True)
+    # GPS coordinates captured at check-in
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
 
     __table_args__ = (UniqueConstraint('employee_id', 'date', name='attendance_employee_date_unique'),)

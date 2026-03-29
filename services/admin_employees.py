@@ -62,6 +62,7 @@ def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
         designation_id=data.designation_id,
         year_joined=data.year_joined,
         salary=data.salary,
+        role=data.role or 'employee',
     )
     try:
         db.add(emp)

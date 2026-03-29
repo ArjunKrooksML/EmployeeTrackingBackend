@@ -2,23 +2,29 @@ from pydantic import BaseModel
 from datetime import date, datetime, time
 from typing import Optional
 
-class AttendanceBase(BaseModel):
+
+class AttBase(BaseModel):
     date: date
     attendance: str
 
-class AttendanceUpdate(BaseModel):
+
+class AttUpdate(BaseModel):
     attendance: str
 
-class AttendanceResponse(BaseModel):
+
+class AttResp(BaseModel):
     id: int
     employee_id: int
     date: date
     attendance: str
     checkin: Optional[time]
+    lat: Optional[float]
+    lng: Optional[float]
     created_at: datetime
 
     class Config:
         from_attributes = True
 
-class AttendanceWithEmployee(AttendanceResponse):
+
+class AttWithEmp(AttResp):
     employee_name: str
