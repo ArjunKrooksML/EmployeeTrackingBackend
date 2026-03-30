@@ -69,7 +69,7 @@ class Attendance(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     employee_id = Column(Integer, ForeignKey("employees.employee_id"), nullable=False)
     date = Column(Date, nullable=False)
-    attendance = Column(ENUM('present', 'absent', 'late', name='attendance_status', create_type=True), nullable=False)
+    attendance = Column(ENUM('pending', 'present', 'absent', 'late', name='attendance_status', create_type=False), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     checkin = Column(Time, nullable=True)
     # GPS coordinates captured at check-in

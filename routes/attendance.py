@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 from database.connection import get_db
-from models.attendance import AttResp, AttWithEmp, AttUpdate
+from models.attendance import AttResp, AttWithEmp, AttUpdate, CheckinReq
 from middleware.rbac import require_gm
 from services import attendance as svc
 
@@ -10,13 +10,8 @@ router = APIRouter()
 
 
 @router.post("/attendance/checkin", response_model=AttResp)
-def checkin(
-    employee_id: int = Query(...),
-    lat: Optional[float] = Query(None),
-    lng: Optional[float] = Query(None),
-    db: Session = Depends(get_db)
-):
-    return svc.do_checkin(employee_id, db, lat, lng)
+def checkin(data: CheckinReq, db: Session = Depends(get_db)):
+    return svc.do_checkin(data.employee_id, db, data.lat, data.lng)
 
 
 @router.get("/attendance/employee/{employee_id}", response_model=List[AttResp])

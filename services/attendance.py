@@ -25,7 +25,7 @@ def do_checkin(emp_id: int, db: Session, lat: Optional[float] = None, lng: Optio
         employee_id=emp_id,
         date=today,
         checkin=now,
-        attendance='absent',
+        attendance='pending',
         lat=lat,
         lng=lng
     )
