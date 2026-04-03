@@ -9,7 +9,7 @@ from database.models import Project as ProjectDB
 def get_employee_tasks(employee_name: str, db: Session) -> List[TaskDB]:
     """Get all tasks assigned to a specific employee"""
     try:
-        tasks = db.query(TaskDB).filter(TaskDB.assigned_to == employee_name).order_by(TaskDB.created.desc()).all()
+        tasks = db.query(TaskDB).filter(TaskDB.assigned_to == employee_name).order_by(TaskDB.created_at.desc()).all()
         return tasks
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Error fetching tasks: {str(e)}")
