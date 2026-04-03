@@ -45,16 +45,6 @@ def hash_pwd(pwd: str) -> str:
 def verify_pwd(plain: str, hashed: str) -> bool:
     return hash_pwd(plain) == hashed
 
-def val_desig_id(desig_id: Optional[int], db: Session) -> None:
-    if desig_id is not None:
-        try:
-            result = db.execute(text("SELECT 1 FROM designations WHERE id = :id"), {"id": desig_id})
-            if not result.first():
-                raise HTTPException(status_code=400, detail=f"Designation ID {desig_id} does not exist")
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error validating designation_id: {str(e)}")
 
 # Backward compatibility aliases
 validate_email = val_email
@@ -64,5 +54,4 @@ validate_date = val_date
 validate_id_number = val_id
 hash_password = hash_pwd
 verify_password = verify_pwd
-validate_designation_id = val_desig_id
 

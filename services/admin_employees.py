@@ -5,7 +5,7 @@ from datetime import date
 from fastapi import HTTPException
 from models.employees import EmployeeCreate, EmployeeUpdate, EmployeeImport
 from database.models import Employee as EmployeeDB
-from middleware.helpers import hash_pwd, val_desig_id
+from middleware.helpers import hash_pwd
 import secrets
 
 
@@ -32,10 +32,8 @@ def _get_enum_val(db: Session, norm_type: str) -> str:
     return norm_type
 
 
-def _handle_db_err(e: Exception, desig_id: Optional[int] = None) -> None:
+def _handle_db_err(e: Exception) -> None:
     err_msg = str(e).lower()
-    if "foreign key constraint" in err_msg and "designation_id" in err_msg:
-        raise HTTPException(status_code=400, detail=f"Designation ID {desig_id} does not exist")
     if "unique constraint" in err_msg:
         if "employees_email_key" in err_msg:
             raise HTTPException(status_code=400, detail="An employee with this email already exists")
@@ -46,7 +44,6 @@ def _handle_db_err(e: Exception, desig_id: Optional[int] = None) -> None:
 
 
 def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
-    val_desig_id(data.designation_id, db)
     id_type = _get_enum_val(db, norm_id_type(data.id_type))
     # Generate random password if one wasn't provided
     pwd = data.password or _gen_def_pwd(data.email)
@@ -59,7 +56,6 @@ def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
         phone_no=data.phone_no,
         id_type=id_type,
         id_number=data.id_number,
-        designation_id=data.designation_id,
         year_joined=data.year_joined,
         salary=data.salary,
         role=data.role or 'employee',
@@ -73,7 +69,7 @@ def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
         return emp
     except Exception as e:
         db.rollback()
-        _handle_db_err(e, data.designation_id)
+        _handle_db_err(e)
 
 
 def get_all(db: Session) -> List[EmployeeDB]:
@@ -89,8 +85,6 @@ def update_emp(emp_id: int, data: EmployeeUpdate, db: Session) -> Optional[Emplo
     if not emp:
         return None
     upd = data.model_dump(exclude_unset=True)
-    if 'designation_id' in upd:
-        val_desig_id(upd['designation_id'], db)
     if 'id_type' in upd:
         upd['id_type'] = _get_enum_val(db, norm_id_type(upd['id_type']))
     if 'password' in upd:
@@ -103,7 +97,7 @@ def update_emp(emp_id: int, data: EmployeeUpdate, db: Session) -> Optional[Emplo
         return emp
     except Exception as e:
         db.rollback()
-        _handle_db_err(e, upd.get('designation_id'))
+        _handle_db_err(e)
 
 
 def delete_emp(emp_id: int, db: Session) -> bool:
@@ -124,11 +118,6 @@ def import_emps(data: List[EmployeeImport], db: Session) -> List[EmployeeDB]:
     emps = []
     errs = []
     for idx, d in enumerate(data, start=1):
-        try:
-            val_desig_id(d.designation_id, db)
-        except HTTPException as e:
-            errs.append(f"Row {idx}: {e.detail}")
-            continue
         pwd = d.password or _gen_def_pwd(d.email)
         dob_val = d.dob or date(1990, 1, 1)
         emp = EmployeeDB(
@@ -140,7 +129,6 @@ def import_emps(data: List[EmployeeImport], db: Session) -> List[EmployeeDB]:
             phone_no=d.phone_no,
             id_type=_get_enum_val(db, norm_id_type(d.id_type)),
             id_number=d.id_number,
-            designation_id=d.designation_id,
             year_joined=d.year_joined,
             salary=d.salary,
         )

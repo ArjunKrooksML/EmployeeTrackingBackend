@@ -13,7 +13,6 @@ class EmployeeBase(BaseModel):
     phone_no: str = Field(max_length=15)
     id_type: str
     id_number: str = Field(max_length=50)
-    designation_id: Optional[int] = None
     year_joined: Optional[str] = Field(max_length=10, default=None)
     salary: int
     role: Optional[str] = 'employee'
@@ -82,7 +81,6 @@ class EmployeeImport(BaseModel):
     phone_no: str = Field(max_length=15)
     id_type: str
     id_number: str = Field(max_length=50)
-    designation_id: Optional[int] = None
     year_joined: Optional[str] = Field(max_length=10, default=None)
     salary: int
 
@@ -148,7 +146,6 @@ class EmployeeUpdate(BaseModel):
     phone_no: Optional[str] = Field(max_length=15, default=None)
     id_type: Optional[str] = None
     id_number: Optional[str] = Field(max_length=50, default=None)
-    designation_id: Optional[int] = None
     year_joined: Optional[str] = Field(max_length=10, default=None)
     salary: Optional[int] = None
     role: Optional[str] = None
@@ -214,7 +211,6 @@ class EmployeeResponse(BaseModel):
     phone_no: str
     id_type: str
     id_number: str
-    designation_id: Optional[int] = None
     year_joined: Optional[str] = None
     salary: int
     role: str = 'employee'
@@ -240,7 +236,6 @@ class EmployeePublic(BaseModel):
     phone_no: str
     id_type: str
     id_number: str
-    designation_id: Optional[int] = None
     year_joined: Optional[str] = None
     salary: int
     role: str = 'employee'

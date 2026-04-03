@@ -16,7 +16,6 @@ class Employee(Base):
     phone_no = Column(String(15), nullable=False)
     id_type = Column(String(50), nullable=False)
     id_number = Column(String(50), nullable=False, unique=True)
-    designation_id = Column(Integer, nullable=True)
     year_joined = Column(String(10), nullable=True)
     salary = Column(Integer, nullable=False)
     # role: employee | senior | hr | gm
@@ -39,17 +38,30 @@ class Project(Base):
 class Task(Base):
     __tablename__ = "tasks"
 
-    task_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    project_id = Column(Integer, nullable=False)
-    task_name = Column(String(200), nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    assigned_to = Column(String(150), nullable=True)
-    start_date = Column(Date, nullable=True)
-    deadline = Column(Date, nullable=True)
-    iscompleted = Column(Boolean, nullable=False, server_default="false")
-    created = Column(DateTime(timezone=True), server_default=func.now())
-    status = Column(String(100), nullable=False)
-    priority = Column(String(100), nullable=False)
+    assigned_to = Column(Integer, ForeignKey("employees.employee_id"), nullable=True)
+    status = Column(String(50), nullable=False, default="To Do")
+    priority = Column(String(50), nullable=False, default="Medium")
+    target_date = Column(Date, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class Leave(Base):
+    __tablename__ = "leaves"
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.employee_id", ondelete="CASCADE"), nullable=False)
+    leave_type = Column(String(50), nullable=False)  # 'casual', 'sick', 'emergency'
+    leave_date = Column(Date, nullable=False)
+    day_type = Column(String(50), nullable=False)    # 'full', 'first_half', 'second_half'
+    status = Column(String(50), nullable=False, default="pending") # 'pending', 'approved', 'rejected'
+    reason = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class Admin(Base):
