@@ -33,7 +33,7 @@ class TaskUpdate(BaseModel):
 
 class Task(TaskBase):
     task_id: int
-    created_at: datetime
+    created: datetime
 
     class Config:
         from_attributes = True

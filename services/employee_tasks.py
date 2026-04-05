@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from database.models import Task as TaskDB
 from database.models import Project as ProjectDB
+from database.models import Employee as EmployeeDB
 
 
 def get_employee_tasks(employee_name: str, db: Session) -> List[TaskDB]:
-    """Get all tasks assigned to a specific employee"""
+    """Get all tasks for a specific employee"""
     try:
-        tasks = db.query(TaskDB).filter(TaskDB.assigned_to == employee_name).order_by(TaskDB.created_at.desc()).all()
+        tasks = db.query(TaskDB).filter(TaskDB.assigned_to == employee_name).order_by(TaskDB.created.desc()).all()
         return tasks
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Error fetching tasks: {str(e)}")
@@ -21,8 +22,9 @@ def update_task_status(task_id: int, employee_name: str, is_completed: bool, db:
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
+    # verify task belongs to this employee
     if task.assigned_to != employee_name:
-        raise HTTPException(status_code=403, detail="You are not assigned to this task")
+        raise HTTPException(status_code=403, detail="Task not assigned to you")
     
     task.iscompleted = is_completed
     if is_completed:

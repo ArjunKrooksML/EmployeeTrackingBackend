@@ -40,16 +40,15 @@ class Task(Base):
 
     task_id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.project_id"), nullable=False)
-    task_name = Column(String(255), nullable=False)
+    task_name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    assigned_to = Column(Integer, ForeignKey("employees.employee_id"), nullable=True)
-    status = Column(String(50), nullable=False, default="To Do")
-    priority = Column(String(50), nullable=False, default="Medium")
+    assigned_to = Column(String(150), nullable=True)
     start_date = Column(Date, nullable=True)
     deadline = Column(Date, nullable=True)
-    iscompleted = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    iscompleted = Column(Boolean, nullable=False, default=False)
+    created = Column(DateTime(timezone=True), server_default=func.now())
+    status = Column(String(100), nullable=False, default="To Do")
+    priority = Column(String(100), nullable=False, default="Medium")
 
 
 class Leave(Base):
