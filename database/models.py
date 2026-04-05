@@ -38,9 +38,9 @@ class Project(Base):
 class Task(Base):
     __tablename__ = "tasks"
 
-    id = Column(Integer, primary_key=True, index=True)
-    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    title = Column(String(255), nullable=False)
+    task_id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.project_id"), nullable=False)
+    task_name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     assigned_to = Column(Integer, ForeignKey("employees.employee_id"), nullable=True)
     status = Column(String(50), nullable=False, default="To Do")
