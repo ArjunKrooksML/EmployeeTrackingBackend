@@ -45,7 +45,9 @@ class Task(Base):
     assigned_to = Column(Integer, ForeignKey("employees.employee_id"), nullable=True)
     status = Column(String(50), nullable=False, default="To Do")
     priority = Column(String(50), nullable=False, default="Medium")
-    target_date = Column(Date, nullable=False)
+    start_date = Column(Date, nullable=True)
+    deadline = Column(Date, nullable=True)
+    iscompleted = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
