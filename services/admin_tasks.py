@@ -7,7 +7,8 @@ from models.tasks import TaskCreate, TaskUpdate
 
 
 def list_tasks(db: Session) -> List[TaskDB]:
-    return db.query(TaskDB).order_by(TaskDB.created.desc()).all()
+    """Admin function: List all tasks"""
+    return db.query(TaskDB).order_by(TaskDB.created_at.desc()).all()
 
 
 def create_task(task_data: TaskCreate, db: Session) -> TaskDB:
