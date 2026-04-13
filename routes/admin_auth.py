@@ -5,13 +5,17 @@ from database.connection import get_db
 from middleware.auth import get_current_admin
 from database.models import Admin as AdminDB
 from models.admin import AdminLogin
-from services.auth import auth_admin, refresh_tok, reset_pwd, change_pwd
+from services.auth import auth_admin, refresh_tok, reset_pwd, change_pwd, send_reset_otp
 
 router = APIRouter(prefix="/admin/auth", tags=["admin/auth"])
 
 
 class RefreshReq(BaseModel):
     refresh_token: str
+
+
+class SendOtpReq(BaseModel):
+    email: str
 
 
 class ResetReq(BaseModel):
@@ -33,6 +37,11 @@ async def login(payload: AdminLogin, db: Session = Depends(get_db)):
 @router.post("/refresh")
 async def refresh(req: RefreshReq, db: Session = Depends(get_db)):
     return refresh_tok(req.refresh_token, db)
+
+
+@router.post("/send-otp")
+async def send_otp(req: SendOtpReq, db: Session = Depends(get_db)):
+    return send_reset_otp(req.email, "admin", db)
 
 
 @router.post("/reset-password")

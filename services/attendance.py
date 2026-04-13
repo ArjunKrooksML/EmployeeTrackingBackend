@@ -42,17 +42,20 @@ def get_att(emp_id: int, db: Session):
     ).order_by(Attendance.date.desc()).all()
 
 
-def all_att(db: Session):
+def all_att(db: Session, skip: int = 0, limit: int = 20, page: int = 1, page_size: int = 20):
     # Fetch all attendance joined with employee name
-    rows = db.query(Attendance, Employee.employee_name).join(
+    base_q = db.query(Attendance, Employee.employee_name).join(
         Employee, Attendance.employee_id == Employee.employee_id
-    ).order_by(Attendance.date.desc()).all()
+    )
+    total = db.query(Attendance).count()
+    rows = base_q.order_by(Attendance.date.desc()).offset(skip).limit(limit).all()
     out = []
     for att, name in rows:
         d = {c.name: getattr(att, c.name) for c in att.__table__.columns}
         d['employee_name'] = name
         out.append(d)
-    return out
+    pages = (total + page_size - 1) // page_size if page_size else 1
+    return {"items": out, "total": total, "page": page, "page_size": page_size, "pages": pages}
 
 
 def upd_att(att_id: int, data: AttUpdate, db: Session):

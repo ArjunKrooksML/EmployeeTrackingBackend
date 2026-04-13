@@ -5,6 +5,8 @@ from middleware.jwt import create_tokens, verify_token, create_access_token
 from database.models import Admin as AdminDB, Employee as EmpDB
 from models.admin import AdminLogin, AdminPublic
 from models.employees import EmployeeLogin, EmployeePublic
+from services.otp import gen_otp, verify_otp
+from services.email import send_otp_email
 
 
 def auth_admin(creds: AdminLogin, db: Session) -> dict:
@@ -50,10 +52,23 @@ def refresh_tok(refresh_token: str, db: Session) -> dict:
     raise HTTPException(status_code=401, detail="Invalid token type")
 
 
+def send_reset_otp(email: str, utype: str, db: Session) -> dict:
+    if utype == "admin":
+        u = db.query(AdminDB).filter(AdminDB.email == email).first()
+    else:
+        u = db.query(EmpDB).filter(EmpDB.email == email).first()
+    if not u:
+        # Don't reveal whether email exists
+        return {"message": "If that email exists, an OTP has been sent"}
+    otp = gen_otp(email, db)
+    send_otp_email(email, otp)
+    return {"message": "If that email exists, an OTP has been sent"}
+
+
 def reset_pwd(email: str, otp: str, new_pwd: str, utype: str, db: Session) -> dict:
     # Reset password after OTP validation
-    if otp != "1234":
-        raise HTTPException(status_code=400, detail="Invalid OTP")
+    if not verify_otp(email, otp, db):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     hashed = hash_pwd(new_pwd)
     if utype == "admin":
         u = db.query(AdminDB).filter(AdminDB.email == email).first()

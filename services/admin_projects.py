@@ -7,8 +7,11 @@ from database.models import Project as ProjectDB
 from models.projects import ProjectCreate, ProjectUpdate
 
 
-def list_projects(db: Session) -> List[ProjectDB]:
-    return db.query(ProjectDB).order_by(ProjectDB.project_id.desc()).all()
+def list_projects(db: Session, skip: int = 0, limit: int = 20, page: int = 1, page_size: int = 20) -> dict:
+    total = db.query(ProjectDB).count()
+    items = db.query(ProjectDB).order_by(ProjectDB.project_id.desc()).offset(skip).limit(limit).all()
+    pages = (total + page_size - 1) // page_size if page_size else 1
+    return {"items": items, "total": total, "page": page, "page_size": page_size, "pages": pages}
 
 
 def create_project(project_data: ProjectCreate, db: Session) -> ProjectDB:

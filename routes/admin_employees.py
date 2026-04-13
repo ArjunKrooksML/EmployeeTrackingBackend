@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
@@ -6,6 +6,7 @@ from database.connection import get_db
 from middleware.rbac import require_hr_or_gm
 from services.admin_employees import add_emp, get_all, get_by_id, update_emp, delete_emp, import_emps
 from models.employees import EmployeeCreate, EmployeeUpdate, EmployeeResponse, EmployeeImport
+from models.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/admin/employees", tags=["admin/employees"])
 
@@ -14,9 +15,15 @@ class ImportReq(BaseModel):
     employees: List[EmployeeImport]
 
 
-@router.get("", response_model=List[EmployeeResponse])
-async def list_emps(db: Session = Depends(get_db), _=Depends(require_hr_or_gm)):
-    return get_all(db)
+@router.get("", response_model=PaginatedResponse[EmployeeResponse])
+async def list_emps(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=10000),
+    db: Session = Depends(get_db),
+    _=Depends(require_hr_or_gm),
+):
+    skip = (page - 1) * page_size
+    return get_all(db, skip=skip, limit=page_size, page=page, page_size=page_size)
 
 
 @router.get("/{emp_id}", response_model=EmployeeResponse)

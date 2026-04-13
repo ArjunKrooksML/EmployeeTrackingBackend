@@ -7,7 +7,7 @@ class TaskBase(BaseModel):
     project_id: int
     task_name: str = Field(max_length=200)
     description: Optional[str] = None
-    assigned_to: Optional[str] = Field(default=None, max_length=150)
+    assigned_to: Optional[int] = None
     start_date: Optional[date] = None
     deadline: Optional[date] = None
     iscompleted: Optional[bool] = False
@@ -23,7 +23,7 @@ class TaskUpdate(BaseModel):
     project_id: Optional[int] = None
     task_name: Optional[str] = Field(default=None, max_length=200)
     description: Optional[str] = None
-    assigned_to: Optional[str] = Field(default=None, max_length=150)
+    assigned_to: Optional[int] = None
     start_date: Optional[date] = None
     deadline: Optional[date] = None
     iscompleted: Optional[bool] = None

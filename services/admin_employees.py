@@ -72,8 +72,11 @@ def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
         _handle_db_err(e)
 
 
-def get_all(db: Session) -> List[EmployeeDB]:
-    return db.query(EmployeeDB).order_by(EmployeeDB.created_at.desc()).all()
+def get_all(db: Session, skip: int = 0, limit: int = 20, page: int = 1, page_size: int = 20) -> dict:
+    total = db.query(EmployeeDB).count()
+    items = db.query(EmployeeDB).order_by(EmployeeDB.created_at.desc()).offset(skip).limit(limit).all()
+    pages = (total + page_size - 1) // page_size if page_size else 1
+    return {"items": items, "total": total, "page": page, "page_size": page_size, "pages": pages}
 
 
 def get_by_id(emp_id: int, db: Session) -> Optional[EmployeeDB]:

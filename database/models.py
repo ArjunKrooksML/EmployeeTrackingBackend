@@ -39,10 +39,10 @@ class Task(Base):
     __tablename__ = "tasks"
 
     task_id = Column(Integer, primary_key=True, index=True)
-    project_id = Column(Integer, ForeignKey("projects.project_id"), nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=False)
     task_name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    assigned_to = Column(String(150), nullable=True)
+    assigned_to = Column(Integer, ForeignKey("employees.employee_id", ondelete="SET NULL"), nullable=True)
     start_date = Column(Date, nullable=True)
     deadline = Column(Date, nullable=True)
     iscompleted = Column(Boolean, nullable=False, default=False)
@@ -80,7 +80,7 @@ class Attendance(Base):
     __tablename__ = "attendance"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    employee_id = Column(Integer, ForeignKey("employees.employee_id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.employee_id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)
     attendance = Column(ENUM('pending', 'present', 'absent', 'late', name='attendance_status', create_type=False), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -90,3 +90,11 @@ class Attendance(Base):
     lng = Column(Float, nullable=True)
 
     __table_args__ = (UniqueConstraint('employee_id', 'date', name='attendance_employee_date_unique'),)
+
+
+class OtpToken(Base):
+    __tablename__ = "otp_tokens"
+
+    email = Column(String(255), primary_key=True)
+    otp = Column(String(6), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)

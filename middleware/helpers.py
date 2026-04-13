@@ -1,6 +1,7 @@
 import re
 from typing import Optional
 import hashlib
+import bcrypt
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from fastapi import HTTPException
@@ -40,10 +41,17 @@ def val_id(id_num: str, id_type: Optional[str] = None) -> bool:
     return len(id_clean) <= 50
 
 def hash_pwd(pwd: str) -> str:
-    return hashlib.sha256(pwd.encode()).hexdigest()
+    return bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()
 
 def verify_pwd(plain: str, hashed: str) -> bool:
-    return hash_pwd(plain) == hashed
+    # Support bcrypt hashes (new) and legacy SHA256 hashes (migration path)
+    if hashed.startswith("$2b$") or hashed.startswith("$2a$"):
+        try:
+            return bcrypt.checkpw(plain.encode(), hashed.encode())
+        except Exception:
+            return False
+    # Legacy SHA256 — still lets existing accounts log in
+    return hashlib.sha256(plain.encode()).hexdigest() == hashed
 
 
 # Backward compatibility aliases
