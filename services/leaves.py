@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from database.models import Leave as LeaveDB, Employee as EmployeeDB
+from database.models import Leave as LeaveDB, Employee as EmployeeDB, Attendance as AttendanceDB
 from models.leaves import LeaveCreate
 from typing import List, Optional
 
@@ -71,16 +71,64 @@ def get_all_leaves(
 def update_leave_status(leave_id: int, new_status: str, db: Session) -> LeaveDB:
     if new_status not in ["approved", "rejected", "pending"]:
         raise HTTPException(status_code=400, detail="Invalid status")
-        
+
     leave = db.query(LeaveDB).filter(LeaveDB.id == leave_id).first()
     if not leave:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
+    prev_status = leave.status
     leave.status = new_status
+
+    if new_status == "approved":
+        existing = db.query(AttendanceDB).filter(
+            AttendanceDB.employee_id == leave.employee_id,
+            AttendanceDB.date == leave.leave_date
+        ).first()
+        if not existing:
+            db.add(AttendanceDB(employee_id=leave.employee_id, date=leave.leave_date, attendance="absent"))
+    elif prev_status == "approved":
+        att = db.query(AttendanceDB).filter(
+            AttendanceDB.employee_id == leave.employee_id,
+            AttendanceDB.date == leave.leave_date,
+            AttendanceDB.attendance == "absent",
+            AttendanceDB.checkin == None
+        ).first()
+        if att:
+            db.delete(att)
+
     try:
         db.commit()
         db.refresh(leave)
         return leave
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+def cancel_leave(leave_id: int, employee_id: int, db: Session) -> dict:
+    leave = db.query(LeaveDB).filter(LeaveDB.id == leave_id).first()
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+    if leave.employee_id != employee_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if leave.status == "rejected":
+        raise HTTPException(status_code=400, detail="Cannot cancel a rejected leave")
+
+    was_approved = leave.status == "approved"
+    leave_date = leave.leave_date
+
+    try:
+        db.delete(leave)
+        if was_approved:
+            att = db.query(AttendanceDB).filter(
+                AttendanceDB.employee_id == employee_id,
+                AttendanceDB.date == leave_date,
+                AttendanceDB.attendance == "absent",
+                AttendanceDB.checkin == None
+            ).first()
+            if att:
+                db.delete(att)
+        db.commit()
+        return {"message": "Leave cancelled"}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

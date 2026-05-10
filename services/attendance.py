@@ -1,18 +1,20 @@
 from sqlalchemy.orm import Session
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 from typing import Optional
 from database.models import Attendance, Employee
 from fastapi import HTTPException
 from models.attendance import AttUpdate
 
+IST = timezone(timedelta(hours=5, minutes=30))
 
 def do_checkin(emp_id: int, db: Session, lat: Optional[float] = None, lng: Optional[float] = None):
     # Verify employee exists
     emp = db.query(Employee).filter(Employee.employee_id == emp_id).first()
     if not emp:
         raise HTTPException(status_code=404, detail=f"Employee {emp_id} not found")
-    today = date.today()
-    now = datetime.now().time()
+    now_ist = datetime.now(IST)
+    today = now_ist.date()
+    now = now_ist.time()
     # Return existing record if already checked in today
     rec = db.query(Attendance).filter(
         Attendance.employee_id == emp_id,

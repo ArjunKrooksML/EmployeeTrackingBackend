@@ -5,7 +5,7 @@ from typing import List, Optional
 from database.connection import get_db
 from models.leaves import LeaveCreate, LeaveResponse, LeaveUpdateStatus, AdminLeaveResponse
 from models.pagination import PaginatedResponse
-from services.leaves import request_leave, get_employee_leaves, get_all_leaves, update_leave_status
+from services.leaves import request_leave, get_employee_leaves, get_all_leaves, update_leave_status, cancel_leave
 from middleware.rbac import require_gm, require_hr_or_gm
 
 router = APIRouter(prefix="/leaves", tags=["Leaves"])
@@ -35,3 +35,8 @@ def fetch_all_leaves(
 @router.put("/{leave_id}/status", response_model=LeaveResponse, dependencies=[Depends(require_hr_or_gm)])
 def change_leave_status(leave_id: int, update_data: LeaveUpdateStatus, db: Session = Depends(get_db)):
     return update_leave_status(leave_id, update_data.status, db)
+
+
+@router.delete("/{leave_id}")
+def cancel_leave_request(leave_id: int, employee_id: int = Query(...), db: Session = Depends(get_db)):
+    return cancel_leave(leave_id, employee_id, db)
