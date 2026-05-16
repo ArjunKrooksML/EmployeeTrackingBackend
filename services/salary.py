@@ -131,3 +131,18 @@ def get_deduction(emp_id: int, month: int, year: int, db: Session) -> Optional[S
         SalaryDB.month == month,
         SalaryDB.year == year
     ).first()
+
+
+def get_my_deductions(emp_id: int, db: Session) -> List[dict]:
+    emp = db.query(EmpDB).filter(EmpDB.employee_id == emp_id).first()
+    if not emp:
+        return []
+    recs = db.query(SalaryDB).filter(
+        SalaryDB.employee_id == emp_id
+    ).order_by(SalaryDB.year.desc(), SalaryDB.month.desc()).all()
+    out = []
+    for rec in recs:
+        d = {c.name: getattr(rec, c.name) for c in rec.__table__.columns}
+        d['employee_name'] = emp.employee_name
+        out.append(d)
+    return out

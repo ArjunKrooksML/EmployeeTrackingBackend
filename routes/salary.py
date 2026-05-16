@@ -2,11 +2,18 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 from database.connection import get_db
+from middleware.auth import get_current_employee
 from middleware.rbac import require_hr_or_gm
+from database.models import Employee as EmployeeDB
 from models.salary import SalaryComputeRequest, SalaryDeductionResponse, BulkComputeRequest
-from services.salary import compute_one, compute_all, save_deduction, get_deduction
+from services.salary import compute_one, compute_all, save_deduction, get_deduction, get_my_deductions
 
 router = APIRouter(prefix="/salary", tags=["salary"])
+
+
+@router.get("/my")
+def my_payslips(emp: EmployeeDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+    return get_my_deductions(emp.employee_id, db)
 
 
 @router.post("/compute", dependencies=[Depends(require_hr_or_gm)])
