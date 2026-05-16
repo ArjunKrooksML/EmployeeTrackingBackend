@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from middleware.helpers import verify_pwd, hash_pwd
-from middleware.jwt import create_tokens, verify_token, create_access_token
+from middleware.jwt import create_tokens, verify_token, create_access_token, create_refresh_token
 from database.models import Admin as AdminDB, Employee as EmpDB
 from models.admin import AdminLogin, AdminPublic
 from models.employees import EmployeeLogin, EmployeePublic
@@ -28,7 +28,6 @@ def auth_emp(creds: EmployeeLogin, db: Session) -> dict:
 
 
 def refresh_tok(refresh_token: str, db: Session) -> dict:
-    # Generate new access token from a valid refresh token
     payload = verify_token(refresh_token, token_type="refresh")
     utype = payload.get("type")
     if utype == "admin":
@@ -38,8 +37,12 @@ def refresh_tok(refresh_token: str, db: Session) -> dict:
         admin = db.query(AdminDB).filter(AdminDB.id == aid).first()
         if not admin:
             raise HTTPException(status_code=401, detail="Admin not found")
-        tok = create_access_token({"admin_id": admin.id, "email": admin.email, "type": "admin"})
-        return {"access_token": tok, "user": AdminPublic.model_validate(admin)}
+        data = {"admin_id": admin.id, "email": admin.email, "type": "admin"}
+        return {
+            "access_token": create_access_token(data),
+            "refresh_token": create_refresh_token(data),
+            "user": AdminPublic.model_validate(admin),
+        }
     elif utype == "employee":
         eid = payload.get("employee_id")
         if not eid:
@@ -47,8 +50,12 @@ def refresh_tok(refresh_token: str, db: Session) -> dict:
         emp = db.query(EmpDB).filter(EmpDB.employee_id == eid).first()
         if not emp:
             raise HTTPException(status_code=401, detail="Employee not found")
-        tok = create_access_token({"employee_id": emp.employee_id, "email": emp.email, "type": "employee"})
-        return {"access_token": tok, "user": EmployeePublic.model_validate(emp)}
+        data = {"employee_id": emp.employee_id, "email": emp.email, "type": "employee"}
+        return {
+            "access_token": create_access_token(data),
+            "refresh_token": create_refresh_token(data),
+            "user": EmployeePublic.model_validate(emp),
+        }
     raise HTTPException(status_code=401, detail="Invalid token type")
 
 

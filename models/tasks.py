@@ -3,6 +3,9 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+TASK_TYPES = ["Tools", "Coupler Supply", "Machine Mobilization", "Machine Demobilization", "Samples Testing"]
+TOOLS_TYPES = ["Chasers", "Rebar Caps", "Forging Dyes", "Gloves", "Hydraulic Oil", "Miscellaneous"]
+
 class TaskBase(BaseModel):
     project_id: int
     task_name: str = Field(max_length=200)
@@ -13,6 +16,8 @@ class TaskBase(BaseModel):
     iscompleted: Optional[bool] = False
     status: str = Field(max_length=100)
     priority: str = Field(max_length=100)
+    task_type: Optional[str] = None
+    tools_type: Optional[str] = None
 
 
 class TaskCreate(TaskBase):
@@ -29,6 +34,8 @@ class TaskUpdate(BaseModel):
     iscompleted: Optional[bool] = None
     status: Optional[str] = Field(default=None, max_length=100)
     priority: Optional[str] = Field(default=None, max_length=100)
+    task_type: Optional[str] = None
+    tools_type: Optional[str] = None
 
 
 class Task(TaskBase):

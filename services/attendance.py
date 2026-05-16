@@ -61,13 +61,16 @@ def all_att(db: Session, skip: int = 0, limit: int = 20, page: int = 1, page_siz
 
 
 def upd_att(att_id: int, data: AttUpdate, db: Session):
-    # Update status of a specific attendance record
     att = db.query(Attendance).filter(Attendance.id == att_id).first()
     if not att:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     if data.attendance not in ['present', 'absent', 'late']:
         raise HTTPException(status_code=400, detail="Invalid attendance status")
-    att.attendance = data.attendance
+    status = data.attendance
+    # If admin marks late but check-in is at or after 14:00, treat as absent (half-day)
+    if status == 'late' and att.checkin and att.checkin.hour >= 14:
+        status = 'absent'
+    att.attendance = status
     db.commit()
     db.refresh(att)
     return att

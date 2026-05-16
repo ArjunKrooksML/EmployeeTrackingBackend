@@ -14,7 +14,10 @@ class EmployeeBase(BaseModel):
     id_type: str
     id_number: str = Field(max_length=50)
     year_joined: Optional[str] = Field(max_length=10, default=None)
-    salary: int
+    basic: int = 0
+    da: int = 0
+    hra: int = 0
+    others: int = 0
     role: Optional[str] = 'employee'
 
     @field_validator('password')
@@ -60,13 +63,6 @@ class EmployeeBase(BaseModel):
             raise ValueError('ID number must contain only digits')
         return self
 
-    @field_validator('salary')
-    @classmethod
-    def check_salary(cls, v: int) -> int:
-        if v < 0:
-            raise ValueError('Salary must be non-negative')
-        return v
-
 
 class EmployeeCreate(EmployeeBase):
     pass
@@ -82,7 +78,10 @@ class EmployeeImport(BaseModel):
     id_type: str
     id_number: str = Field(max_length=50)
     year_joined: Optional[str] = Field(max_length=10, default=None)
-    salary: int
+    basic: int = 0
+    da: int = 0
+    hra: int = 0
+    others: int = 0
 
     @field_validator('password')
     @classmethod
@@ -129,13 +128,6 @@ class EmployeeImport(BaseModel):
             raise ValueError('ID number must contain only digits')
         return self
 
-    @field_validator('salary')
-    @classmethod
-    def check_salary(cls, v: int) -> int:
-        if v < 0:
-            raise ValueError('Salary must be non-negative')
-        return v
-
 
 class EmployeeUpdate(BaseModel):
     employee_name: Optional[str] = Field(max_length=150, default=None)
@@ -147,7 +139,10 @@ class EmployeeUpdate(BaseModel):
     id_type: Optional[str] = None
     id_number: Optional[str] = Field(max_length=50, default=None)
     year_joined: Optional[str] = Field(max_length=10, default=None)
-    salary: Optional[int] = None
+    basic: Optional[int] = None
+    da: Optional[int] = None
+    hra: Optional[int] = None
+    others: Optional[int] = None
     role: Optional[str] = None
 
     @field_validator('password')
@@ -169,13 +164,6 @@ class EmployeeUpdate(BaseModel):
     def check_phone(cls, v: Optional[str]) -> Optional[str]:
         if v and not validate_phone(v):
             raise ValueError('Invalid phone number format')
-        return v
-
-    @field_validator('salary')
-    @classmethod
-    def check_salary(cls, v: Optional[int]) -> Optional[int]:
-        if v is not None and v < 0:
-            raise ValueError('Salary must be non-negative')
         return v
 
     @model_validator(mode='after')
@@ -212,7 +200,10 @@ class EmployeeResponse(BaseModel):
     id_type: str
     id_number: str
     year_joined: Optional[str] = None
-    salary: int
+    basic: int = 0
+    da: int = 0
+    hra: int = 0
+    others: int = 0
     role: str = 'employee'
     created_at: datetime
     updated_at: datetime
@@ -237,7 +228,10 @@ class EmployeePublic(BaseModel):
     id_type: str
     id_number: str
     year_joined: Optional[str] = None
-    salary: int
+    basic: int = 0
+    da: int = 0
+    hra: int = 0
+    others: int = 0
     role: str = 'employee'
 
     class Config:

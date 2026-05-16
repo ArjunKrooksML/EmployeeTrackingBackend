@@ -17,7 +17,10 @@ class Employee(Base):
     id_type = Column(String(50), nullable=False)
     id_number = Column(String(50), nullable=False, unique=True)
     year_joined = Column(String(10), nullable=True)
-    salary = Column(Integer, nullable=False)
+    basic = Column(Integer, nullable=False, default=0)
+    da = Column(Integer, nullable=False, default=0)
+    hra = Column(Integer, nullable=False, default=0)
+    others = Column(Integer, nullable=False, default=0)
     # role: employee | senior | hr | gm
     role = Column(String(20), nullable=False, server_default='employee')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -49,6 +52,8 @@ class Task(Base):
     created = Column(DateTime(timezone=True), server_default=func.now())
     status = Column(String(100), nullable=False, default="To Do")
     priority = Column(String(100), nullable=False, default="Medium")
+    task_type = Column(String(100), nullable=True)
+    tools_type = Column(String(100), nullable=True)
 
 
 class Leave(Base):
@@ -98,3 +103,27 @@ class OtpToken(Base):
     email = Column(String(255), primary_key=True)
     otp = Column(String(6), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class SalaryDeduction(Base):
+    __tablename__ = "salary_deductions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    employee_id = Column(Integer, ForeignKey("employees.employee_id", ondelete="CASCADE"), nullable=False)
+    month = Column(Integer, nullable=False)
+    year = Column(Integer, nullable=False)
+    lates_count = Column(Integer, default=0)
+    absents_from_lates = Column(Integer, default=0)
+    half_day_absents = Column(Integer, default=0)
+    full_absents = Column(Integer, default=0)
+    paid_leave_used = Column(Boolean, default=False)
+    leave_deduction = Column(Float, default=0.0)
+    advance_deduction = Column(Float, default=0.0)
+    total_deduction = Column(Float, default=0.0)
+    gross_salary = Column(Integer, default=0)
+    net_salary = Column(Float, default=0.0)
+    working_days = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint('employee_id', 'month', 'year', name='salary_emp_month_year_unique'),)

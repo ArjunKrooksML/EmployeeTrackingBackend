@@ -57,7 +57,10 @@ def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
         id_type=id_type,
         id_number=data.id_number,
         year_joined=data.year_joined,
-        salary=data.salary,
+        basic=data.basic,
+        da=data.da,
+        hra=data.hra,
+        others=data.others,
         role=data.role or 'employee',
     )
     try:
@@ -133,7 +136,10 @@ def import_emps(data: List[EmployeeImport], db: Session) -> List[EmployeeDB]:
             id_type=_get_enum_val(db, norm_id_type(d.id_type)),
             id_number=d.id_number,
             year_joined=d.year_joined,
-            salary=d.salary,
+            basic=d.basic,
+            da=d.da,
+            hra=d.hra,
+            others=d.others,
         )
         db.add(emp)
         emps.append(emp)
