@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database.connection import get_db
+from middleware.auth import get_current_employee
+from database.models import Employee as EmpDB
 from services import employee_tasks
 from models.tasks import Task as TaskResponse
 from typing import List
@@ -9,7 +11,9 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 @router.get("/employee/{employee_id}", response_model=List[TaskResponse])
-async def get_employee_tasks(employee_id: int, db: Session = Depends(get_db)):
+async def get_employee_tasks(employee_id: int, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+    if employee_id != emp.employee_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access another employee's tasks")
     return employee_tasks.get_employee_tasks(employee_id, db)
 
 
@@ -18,6 +22,9 @@ async def mark_task_complete(
     task_id: int,
     employee_id: int,
     is_completed: bool = True,
+    emp: EmpDB = Depends(get_current_employee),
     db: Session = Depends(get_db)
 ):
+    if employee_id != emp.employee_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot update another employee's task")
     return employee_tasks.update_task_status(task_id, employee_id, is_completed, db)

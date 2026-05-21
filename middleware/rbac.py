@@ -9,6 +9,7 @@ _sec = HTTPBearer()
 
 _HR_GM = {'hr', 'gm'}
 _GM_ONLY = {'gm'}
+_GM_SENIOR = {'gm', 'senior'}
 
 
 def _get_payload(creds: HTTPAuthorizationCredentials):
@@ -58,5 +59,27 @@ def require_gm(
     if not emp:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Employee not found")
     if emp.role not in _GM_ONLY:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
+    return emp
+
+
+def require_gm_or_senior(
+    creds: HTTPAuthorizationCredentials = Depends(_sec),
+    db: Session = Depends(get_db)
+):
+    # Admin tokens always pass through
+    payload = _get_payload(creds)
+    if payload.get("admin_id"):
+        admin = db.query(AdminDB).filter(AdminDB.id == payload["admin_id"]).first()
+        if admin:
+            return admin
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin not found")
+    emp_id = payload.get("employee_id")
+    if not emp_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    emp = db.query(EmpDB).filter(EmpDB.employee_id == emp_id).first()
+    if not emp:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Employee not found")
+    if emp.role not in _GM_SENIOR:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
     return emp

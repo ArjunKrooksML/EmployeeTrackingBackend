@@ -1,22 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List
 from database.connection import get_db
 from models.attendance import AttResp, AttWithEmp, AttUpdate, CheckinReq
 from models.pagination import PaginatedResponse
-from middleware.rbac import require_gm
+from middleware.rbac import require_gm, require_hr_or_gm
+from middleware.auth import get_current_employee
+from database.models import Employee as EmpDB
 from services import attendance as svc
 
 router = APIRouter()
 
 
 @router.post("/attendance/checkin", response_model=AttResp)
-def checkin(data: CheckinReq, db: Session = Depends(get_db)):
+def checkin(data: CheckinReq, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+    if data.employee_id != emp.employee_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot check in for another employee")
     return svc.do_checkin(data.employee_id, db, data.lat, data.lng)
 
 
 @router.get("/attendance/employee/{employee_id}", response_model=List[AttResp])
-def my_att(employee_id: int, db: Session = Depends(get_db)):
+def my_att(employee_id: int, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+    if employee_id != emp.employee_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access another employee's attendance")
     return svc.get_att(employee_id, db)
 
 
@@ -32,5 +38,5 @@ def att_all(
 
 
 @router.put("/attendance/{att_id}", response_model=AttResp)
-def upd_att(att_id: int, data: AttUpdate, db: Session = Depends(get_db)):
+def upd_att(att_id: int, data: AttUpdate, db: Session = Depends(get_db), _=Depends(require_hr_or_gm)):
     return svc.upd_att(att_id, data, db)
