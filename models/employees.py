@@ -57,10 +57,10 @@ class EmployeeBase(BaseModel):
             if id_type_lower in ['aadhaar', 'aadhar']:
                 raise ValueError('Aadhaar number must be exactly 12 digits')
             elif id_type_lower == 'pan':
-                raise ValueError('PAN number must be exactly 10 digits')
+                raise ValueError('PAN must be exactly 10 alphanumeric characters')
             elif id_type_lower == 'passport':
-                raise ValueError('Passport number must be exactly 8 digits')
-            raise ValueError('ID number must contain only digits')
+                raise ValueError('Passport must be exactly 8 alphanumeric characters')
+            raise ValueError('Invalid ID number')
         return self
 
 
@@ -122,10 +122,10 @@ class EmployeeImport(BaseModel):
             if id_type_lower in ['aadhaar', 'aadhar']:
                 raise ValueError('Aadhaar number must be exactly 12 digits')
             elif id_type_lower == 'pan':
-                raise ValueError('PAN number must be exactly 10 digits')
+                raise ValueError('PAN must be exactly 10 alphanumeric characters')
             elif id_type_lower == 'passport':
-                raise ValueError('Passport number must be exactly 8 digits')
-            raise ValueError('ID number must contain only digits')
+                raise ValueError('Passport must be exactly 8 alphanumeric characters')
+            raise ValueError('Invalid ID number')
         return self
 
 
@@ -174,10 +174,10 @@ class EmployeeUpdate(BaseModel):
                 if id_type_lower in ['aadhaar', 'aadhar']:
                     raise ValueError('Aadhaar number must be exactly 12 digits')
                 elif id_type_lower == 'pan':
-                    raise ValueError('PAN number must be exactly 10 digits')
+                    raise ValueError('PAN must be exactly 10 alphanumeric characters')
                 elif id_type_lower == 'passport':
-                    raise ValueError('Passport number must be exactly 8 digits')
-                raise ValueError('ID number must contain only digits')
+                    raise ValueError('Passport must be exactly 8 alphanumeric characters')
+                raise ValueError('Invalid ID number')
         return self
 
 

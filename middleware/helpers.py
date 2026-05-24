@@ -28,16 +28,14 @@ def val_id(id_num: str, id_type: Optional[str] = None) -> bool:
     if not id_num:
         return False
     id_clean = id_num.strip()
-    if not id_clean.isdigit():
-        return False
     if id_type:
         id_lower = id_type.lower()
         if id_lower in ['aadhaar', 'aadhar']:
-            return len(id_clean) == 12
+            return id_clean.isdigit() and len(id_clean) == 12
         elif id_lower == 'pan':
-            return len(id_clean) == 10
+            return id_clean.isalnum() and len(id_clean) == 10
         elif id_lower == 'passport':
-            return len(id_clean) == 8
+            return id_clean.isalnum() and len(id_clean) == 8
     return len(id_clean) <= 50
 
 def hash_pwd(pwd: str) -> str:
