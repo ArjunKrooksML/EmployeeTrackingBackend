@@ -26,4 +26,5 @@ REFRESH_TOKEN_EXPIRE_DAYS = REFRESH_TOKEN_EXPIRE_SECONDS // 86400
 # Email (Resend)
 RESEND_API_KEY = os.getenv("RESEND_API", "")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
+LOGO_URL = os.getenv("IMAGE", "")
 
