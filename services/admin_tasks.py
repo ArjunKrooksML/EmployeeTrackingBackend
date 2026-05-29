@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from database.models import Task as TaskDB, Employee as EmpDB
 from models.tasks import TaskCreate, TaskUpdate
 from services.email import send_task_assigned_email
+from services.whatsapp import send_task_whatsapp
 
 
 def list_tasks(
@@ -31,10 +32,13 @@ def list_tasks(
 def _notify_assigned(employee_id: int, task: TaskDB, db: Session):
     emp = db.query(EmpDB).filter(EmpDB.employee_id == employee_id).first()
     if emp:
+        deadline_str = str(task.deadline) if task.deadline else None
         try:
-            send_task_assigned_email(emp.email, emp.employee_name, task.task_name, task.description, str(task.deadline) if task.deadline else None)
+            send_task_assigned_email(emp.email, emp.employee_name, task.task_name, task.description, deadline_str)
         except Exception as e:
             print(f"[email] Failed to send task assignment email: {e}")
+        if emp.phone_no:
+            send_task_whatsapp(emp.phone_no, emp.employee_name, task.task_name, deadline_str)
 
 
 def create_task(task_data: TaskCreate, db: Session) -> TaskDB:

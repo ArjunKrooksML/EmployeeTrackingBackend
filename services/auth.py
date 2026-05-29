@@ -7,6 +7,7 @@ from models.admin import AdminLogin, AdminPublic
 from models.employees import EmployeeLogin, EmployeePublic
 from services.otp import gen_otp, verify_otp
 from services.email import send_otp_email
+from services.whatsapp import send_otp_whatsapp
 
 
 def auth_admin(creds: AdminLogin, db: Session) -> dict:
@@ -69,6 +70,9 @@ def send_reset_otp(email: str, utype: str, db: Session) -> dict:
         return {"message": "If that email exists, an OTP has been sent"}
     otp = gen_otp(email, db)
     send_otp_email(email, otp)
+    print(f"[whatsapp] OTP check — utype: {utype!r}, phone_no: {getattr(u, 'phone_no', 'N/A')!r}")
+    if utype == "employee" and hasattr(u, "phone_no") and u.phone_no:
+        send_otp_whatsapp(u.phone_no, otp)
     return {"message": "If that email exists, an OTP has been sent"}
 
 

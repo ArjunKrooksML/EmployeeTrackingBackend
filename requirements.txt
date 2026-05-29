@@ -12,3 +12,4 @@ PyJWT
 gunicorn
 bcrypt
 resend
+twilio

@@ -29,3 +29,10 @@ FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 LOGO_URL = os.getenv("IMAGE", "")
 PORTAL_URL = os.getenv("PORTAL_URL", "")
 
+# Twilio WhatsApp
+TWILIO_SID = os.getenv("TWILIO_SID", "")
+TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
+TWILIO_WA_FROM = os.getenv("TWILIO_WA_FROM", "")        # whatsapp:+14155238886 (sandbox) or your approved number
+TWILIO_WA_OTP_TEMPLATE = os.getenv("TWILIO_WA_OTP_TEMPLATE", "")    # content SID for prod; leave empty on sandbox
+TWILIO_WA_TASK_TEMPLATE = os.getenv("TWILIO_WA_TASK_TEMPLATE", "")  # content SID for prod; leave empty on sandbox
+
