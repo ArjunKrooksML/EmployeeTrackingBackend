@@ -59,6 +59,19 @@ def create_task(task_data: TaskCreate, db: Session) -> TaskDB:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
 
+def delete_task(task_id: int, db: Session) -> bool:
+    task = db.query(TaskDB).filter(TaskDB.task_id == task_id).first()
+    if not task:
+        return False
+    try:
+        db.delete(task)
+        db.commit()
+        return True
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting task: {str(e)}")
+
+
 def update_task(task_id: int, task_data: TaskUpdate, db: Session) -> Optional[TaskDB]:
     db_task = db.query(TaskDB).filter(TaskDB.task_id == task_id).first()
     if not db_task:

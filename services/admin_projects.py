@@ -29,6 +29,21 @@ def create_project(project_data: ProjectCreate, db: Session) -> ProjectDB:
         raise HTTPException(status_code=500, detail=f"Error creating project: {str(e)}")
 
 
+def delete_project(project_id: int, db: Session) -> bool:
+    project = db.query(ProjectDB).filter(ProjectDB.project_id == project_id).first()
+    if not project:
+        return False
+    try:
+        db.delete(project)
+        db.commit()
+        return True
+    except SQLAlchemyError as e:
+        db.rollback()
+        if "foreign key" in str(e).lower() or "fkey" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Cannot delete project with existing tasks. Delete the tasks first.")
+        raise HTTPException(status_code=500, detail=f"Error deleting project: {str(e)}")
+
+
 def update_project(project_id: int, project_data: ProjectUpdate, db: Session) -> Optional[ProjectDB]:
     db_project = db.query(ProjectDB).filter(ProjectDB.project_id == project_id).first()
     if not db_project:

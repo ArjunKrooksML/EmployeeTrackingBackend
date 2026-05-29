@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database.connection import get_db
 from middleware.rbac import require_hr_or_gm
-from services.admin_projects import list_projects, create_project, update_project
+from services.admin_projects import list_projects, create_project, update_project, delete_project
 from models.projects import Project as ProjectResp, ProjectCreate, ProjectUpdate
 from models.pagination import PaginatedResponse
 
@@ -32,3 +32,9 @@ async def edit_project(project_id: int, project: ProjectUpdate, db: Session = De
     if not updated:
         raise HTTPException(status_code=404, detail="Project not found")
     return updated
+
+
+@router.delete("/{project_id}", status_code=204)
+async def remove_project(project_id: int, db: Session = Depends(get_db), _=Depends(require_hr_or_gm)):
+    if not delete_project(project_id, db):
+        raise HTTPException(status_code=404, detail="Project not found")

@@ -127,7 +127,7 @@ def send_task_assigned_email(
             {desc_block}
         </div>
 
-        <a href="#" style="display:inline-block;background:#4f46e5;color:#ffffff;
+        <a href="{config.PORTAL_URL}" style="display:inline-block;background:#4f46e5;color:#ffffff;
                            font-size:13px;font-weight:600;padding:10px 22px;
                            border-radius:8px;text-decoration:none;">
             View in Portal
