@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import extract
 from fastapi import HTTPException
 from database.models import Leave as LeaveDB, Employee as EmployeeDB, Attendance as AttendanceDB
 from models.leaves import LeaveCreate
@@ -17,6 +18,20 @@ def request_leave(data: LeaveCreate, db: Session) -> LeaveDB:
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="A leave request already exists for this date")
+
+    # Enforce 1 casual leave per month
+    if data.leave_type == "casual":
+        month = data.leave_date.month
+        year = data.leave_date.year
+        existing_casual = db.query(LeaveDB).filter(
+            LeaveDB.employee_id == data.employee_id,
+            LeaveDB.leave_type == "casual",
+            LeaveDB.status != "rejected",
+            extract("month", LeaveDB.leave_date) == month,
+            extract("year", LeaveDB.leave_date) == year,
+        ).count()
+        if existing_casual >= 1:
+            raise HTTPException(status_code=400, detail="Casual leave limit reached: only 1 casual leave allowed per month")
 
     # Ensure valid inputs
     if data.leave_type not in ["casual", "sick", "emergency"]:
