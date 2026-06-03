@@ -9,6 +9,7 @@ class ProjectBase(BaseModel):
     address: str
     start_date: date
     completion_date: Optional[date] = None
+    po_prefix: Optional[str] = Field(default=None, max_length=50)
 
     @model_validator(mode='after')
     def check_completion(cls, values):
@@ -29,6 +30,7 @@ class ProjectUpdate(BaseModel):
     address: Optional[str] = None
     start_date: Optional[date] = None
     completion_date: Optional[date] = None
+    po_prefix: Optional[str] = Field(default=None, max_length=50)
 
 
 class Project(ProjectBase):

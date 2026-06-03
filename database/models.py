@@ -36,6 +36,7 @@ class Project(Base):
     address = Column(Text, nullable=False)
     start_date = Column(Date, nullable=False)
     completion_date = Column(Date, nullable=True)
+    po_prefix = Column(String(50), nullable=True)
 
 
 class Task(Base):
@@ -95,6 +96,43 @@ class Attendance(Base):
     lng = Column(Float, nullable=True)
 
     __table_args__ = (UniqueConstraint('employee_id', 'date', name='attendance_employee_date_unique'),)
+
+
+class PurchaseOrder(Base):
+    __tablename__ = "purchase_orders"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    po_number = Column(String(100), nullable=False, unique=True)
+    project_id = Column(Integer, ForeignKey("projects.project_id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class POItem(Base):
+    __tablename__ = "po_items"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    po_id = Column(Integer, ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False)
+    size = Column(String(20), nullable=False)
+    quantity = Column(Integer, nullable=False)
+
+
+class SupplyOrder(Base):
+    __tablename__ = "supply_orders"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    po_id = Column(Integer, ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False)
+    invoice_number = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class SOItem(Base):
+    __tablename__ = "so_items"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    so_id = Column(Integer, ForeignKey("supply_orders.id", ondelete="CASCADE"), nullable=False)
+    size = Column(String(20), nullable=False)
+    supplied_qty = Column(Integer, nullable=False)
+    balance_qty = Column(Integer, nullable=False)
 
 
 class OtpToken(Base):
