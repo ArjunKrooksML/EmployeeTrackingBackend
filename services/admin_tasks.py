@@ -38,7 +38,8 @@ def _notify_assigned(employee_id: int, task: TaskDB, db: Session):
         except Exception as e:
             print(f"[email] Failed to send task assignment email: {e}")
         if emp.phone_no:
-            send_task_whatsapp(emp.phone_no, emp.employee_name, task.task_name, deadline_str)
+            start_str = str(task.start_date) if task.start_date else None
+            send_task_whatsapp(emp.phone_no, emp.employee_name, task.task_name, task.description, start_str, deadline_str)
 
 
 def create_task(task_data: TaskCreate, db: Session) -> TaskDB:
