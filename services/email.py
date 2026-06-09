@@ -81,6 +81,46 @@ def send_otp_email(to: str, otp: str):
     _send(to=to, subject="Your SVAAS Inframax OTP", html=_wrap(body))
 
 
+def send_leave_status_email(to: str, emp_name: str, status: str, leave_date: str, leave_type: str, day_type: str, reason: str | None):
+    is_approved = status == "approved"
+    color = "#16a34a" if is_approved else "#dc2626"
+    bg = "#f0fdf4" if is_approved else "#fef2f2"
+    border = "#bbf7d0" if is_approved else "#fecaca"
+    label = "Approved" if is_approved else "Rejected"
+    reason_row = (
+        f"""<tr>
+            <td style="padding:10px 14px;color:#6b7280;font-size:13px;white-space:nowrap;font-weight:500;">Reason</td>
+            <td style="padding:10px 14px;color:#111827;font-size:13px;">{reason}</td>
+        </tr>"""
+        if reason else ""
+    )
+    body = f"""
+        <p style="margin:0 0 20px;color:#374151;font-size:14px;">Hi <strong>{emp_name}</strong>,</p>
+        <div style="background:{bg};border:1px solid {border};border-radius:10px;padding:16px 20px;margin-bottom:20px;text-align:center;">
+            <span style="font-size:16px;font-weight:700;color:{color};">Leave Request {label}</span>
+        </div>
+        <div style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:20px;">
+            <table style="width:100%;border-collapse:collapse;">
+                <tbody>
+                    <tr>
+                        <td style="padding:10px 14px;color:#6b7280;font-size:13px;white-space:nowrap;font-weight:500;">Date</td>
+                        <td style="padding:10px 14px;color:#111827;font-size:13px;">{leave_date}</td>
+                    </tr>
+                    <tr style="background:#f9fafb;">
+                        <td style="padding:10px 14px;color:#6b7280;font-size:13px;white-space:nowrap;font-weight:500;">Type</td>
+                        <td style="padding:10px 14px;color:#111827;font-size:13px;text-transform:capitalize;">{leave_type} · {day_type.replace('_', ' ')}</td>
+                    </tr>
+                    {reason_row}
+                </tbody>
+            </table>
+        </div>
+        <a href="{config.PORTAL_URL}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;">
+            View in Portal
+        </a>
+    """
+    _send(to=to, subject=f"Leave Request {label} – {leave_date}", html=_wrap(body))
+
+
 def send_task_assigned_email(
     to: str, emp_name: str, task_name: str,
     description: str | None, deadline: str | None

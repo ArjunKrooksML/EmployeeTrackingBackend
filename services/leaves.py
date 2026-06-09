@@ -4,6 +4,8 @@ from fastapi import HTTPException
 from database.models import Leave as LeaveDB, Employee as EmployeeDB, Attendance as AttendanceDB
 from models.leaves import LeaveCreate
 from typing import List, Optional
+from services.email import send_leave_status_email
+from services.whatsapp import send_leave_status_whatsapp
 
 def request_leave(data: LeaveCreate, db: Session) -> LeaveDB:
     # Check if employee exists
@@ -114,10 +116,22 @@ def update_leave_status(leave_id: int, new_status: str, db: Session) -> LeaveDB:
     try:
         db.commit()
         db.refresh(leave)
-        return leave
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    if new_status in ("approved", "rejected"):
+        emp = db.query(EmployeeDB).filter(EmployeeDB.employee_id == leave.employee_id).first()
+        if emp:
+            leave_date_str = str(leave.leave_date)
+            try:
+                send_leave_status_email(emp.email, emp.employee_name, new_status, leave_date_str, leave.leave_type, leave.day_type, leave.reason)
+            except Exception as e:
+                print(f"[email] Failed to send leave status email: {e}")
+            if emp.phone_no:
+                send_leave_status_whatsapp(emp.phone_no, emp.employee_name, new_status, leave_date_str, leave.leave_type, leave.reason)
+
+    return leave
 
 def cancel_leave(leave_id: int, employee_id: int, db: Session) -> dict:
     leave = db.query(LeaveDB).filter(LeaveDB.id == leave_id).first()

@@ -33,8 +33,10 @@ PORTAL_URL = os.getenv("PORTAL_URL", "")
 TWILIO_SID = os.getenv("TWILIO_SID", "")
 TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
 TWILIO_WA_FROM = os.getenv("TWILIO_WA_FROM", "")
+TWILIO_WA_LEAVE_TEMPLATE = os.getenv("TWILIO_LEAVES", "")
 TWILIO_WA_OTP_TEMPLATE = os.getenv("TWILIO_WA_OTP_TEMPLATE", "")
 TWILIO_WA_TASK_TEMPLATE = os.getenv("TWILIO_WA_TASK_TEMPLATE", "")
+
 
 # Twilio SMS
 TWILIO_SMS = os.getenv("TWILIO_SMS", "")

@@ -60,6 +60,23 @@ def send_task_whatsapp(phone: str, emp_name: str, task_name: str, description: s
     _send(phone, body, config.TWILIO_WA_TASK_TEMPLATE, variables)
 
 
+def send_leave_status_whatsapp(phone: str, emp_name: str, status: str, leave_date: str, leave_type: str, reason: str | None):
+    print(f"[whatsapp] send_leave_status_whatsapp called — phone: {phone!r}, status: {status!r}")
+    print(f"[whatsapp] TWILIO_WA_LEAVE_TEMPLATE: {config.TWILIO_WA_LEAVE_TEMPLATE!r}")
+    body = (
+        f"Hi {emp_name}, your {leave_type} leave request for {leave_date} has been {status}. "
+        f"Reason: {reason or 'Not provided'}. Contact HR for any queries."
+    )
+    variables = {
+        "1": emp_name,
+        "2": leave_type,
+        "3": leave_date,
+        "4": status,
+        "5": reason or "Not provided",
+    }
+    _send(phone, body, config.TWILIO_WA_LEAVE_TEMPLATE, variables)
+
+
 def send_otp_sms(phone: str, otp: str):
     print(f"[sms] send_otp_sms called — phone: {phone!r}")
     if not config.TWILIO_SID or not config.TWILIO_SMS:
