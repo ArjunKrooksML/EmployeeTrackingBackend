@@ -75,7 +75,7 @@ def _ser(obj):
             d[col.name] = str(val) if isinstance(val, (date, datetime, time)) else val
         return d
     if isinstance(obj, dict):
-        return {k: (str(v) if isinstance(v, (date, datetime, time)) else v) for k, v in obj.items()}
+        return {k: (str(v) if isinstance(v, (date, datetime, time)) else v) for k, v in obj.items() if not k.startswith('_sa_')}
     return obj
 
 
