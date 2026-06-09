@@ -6,6 +6,7 @@ import config
 from database.models import Employee as EmployeeDB, Admin as AdminDB, Project as ProjectDB, Task as TaskDB
 from services import attendance as att_svc, leaves as leave_svc, employee_tasks as task_svc
 from services import admin_tasks, admin_employees as emp_svc, employee_projects as proj_svc
+from services import orders as order_svc
 from models.leaves import LeaveCreate
 from models.tasks import TaskCreate
 
@@ -24,10 +25,10 @@ You have tools to:
 - Mark attendance (check-in)
 - Apply, view, and cancel leave requests
 - Update task status and progress
-- If the user is HR or GM: view all employees, all attendance, all leaves, approve or reject leave requests, create and assign tasks
+- If the user is HR or GM: view all employees, all attendance, all leaves, approve or reject leave requests, create and assign tasks, view purchase orders and supply orders (invoices)
 
 ## Behaviour rules
-1. **Always confirm before any write action.** Before applying a leave, marking attendance, updating a task, or any action that changes data — summarise what you're about to do and ask the user to confirm. Only proceed after explicit confirmation ("yes", "confirm", "go ahead").
+1. **Always confirm before any write action.** Before applying a leave, marking attendance, updating a task, or any action that changes data — summarise what you're about to do and ask the user to confirm. Any affirmative reply counts as confirmation: "yes", "yeah", "yep", "sure", "ok", "okay", "do it", "go ahead", "proceed", "confirm", or similar — do not ask again. Any negative reply cancels the action: "no", "nah", "nope", "cancel", "don't", "stop", "never mind", or similar — drop it without retrying.
 2. **Only act on what's asked.** Don't volunteer to do multiple things at once unless the user asked for it.
 3. **Stay scoped.** You only have access to SVAAS data through your tools. Don't answer general HR policy questions, legal queries, or anything outside the application's data.
 4. **Be concise.** This is a work tool. Short, clear responses. No unnecessary filler.
@@ -50,9 +51,10 @@ You have tools to manage the entire system:
 - View and manage all projects and tasks
 - View all attendance records
 - View and approve/reject all leave requests
+- View all purchase orders and supply orders (invoices), including size-wise balance summaries
 
 ## Behaviour rules
-1. **Always confirm before any write action.** Before creating, updating, or deleting anything — summarise what you're about to do and ask for confirmation. Only proceed after explicit confirmation.
+1. **Always confirm before any write action.** Before creating, updating, or deleting anything — summarise what you're about to do and ask for confirmation. Any affirmative reply counts as confirmation: "yes", "yeah", "yep", "sure", "ok", "okay", "do it", "go ahead", "proceed", "confirm", or similar — do not ask again. Any negative reply cancels the action: "no", "nah", "nope", "cancel", "don't", "stop", "never mind", or similar — drop it without retrying.
 2. **Only act on what's asked.** Don't volunteer to do multiple things unless asked.
 3. **Stay scoped.** You only have access to SVAAS data through your tools.
 4. **Be concise.** Short, clear responses. No unnecessary filler.
@@ -138,6 +140,11 @@ MANAGER_TOOLS = [
         "deadline": {"type": "string", "description": "YYYY-MM-DD"},
         "priority": {"type": "string", "enum": ["Low", "Medium", "High", "Urgent"]},
     }, ["task_name", "project_id", "assigned_to"]),
+    _fn("get_purchase_orders", "Get all purchase orders with their items and project details.", {}, []),
+    _fn("get_supply_orders", "Get all supply orders (invoices) with supplied quantities and balance.", {}, []),
+    _fn("get_po_summary", "Get size-wise supply summary and remaining balance for a specific purchase order.", {
+        "po_id": {"type": "integer", "description": "Purchase order ID"},
+    }, ["po_id"]),
 ]
 
 ADMIN_TOOLS = [
@@ -164,6 +171,11 @@ ADMIN_TOOLS = [
         "deadline": {"type": "string"},
         "priority": {"type": "string", "enum": ["Low", "Medium", "High", "Urgent"]},
     }, ["task_name", "project_id", "assigned_to"]),
+    _fn("get_purchase_orders", "Get all purchase orders with their items and project details.", {}, []),
+    _fn("get_supply_orders", "Get all supply orders (invoices) with supplied quantities and balance.", {}, []),
+    _fn("get_po_summary", "Get size-wise supply summary and remaining balance for a specific purchase order.", {
+        "po_id": {"type": "integer"},
+    }, ["po_id"]),
 ]
 
 
@@ -213,13 +225,13 @@ def _exec_emp_tool(name: str, inp: dict, emp: EmployeeDB, db: Session) -> dict:
         return {"employees": _ser(db.query(EmployeeDB).all())}
     if name == "get_all_leaves" and is_manager:
         result = leave_svc.get_all_leaves(db, page=1, page_size=100, status=inp.get("status"))
-        return {"leaves": result["items"]}
+        return {"leaves": _ser(result["items"])}
     if name == "approve_reject_leave" and is_manager:
         leave = leave_svc.update_leave_status(inp["leave_id"], inp["status"], db)
         return {"result": f"Leave {inp['status']}", "leave": _ser(leave)}
     if name == "get_all_attendance" and is_manager:
         result = att_svc.all_att(db, page=1, page_size=inp.get("limit", 50))
-        return {"attendance": result["items"]}
+        return {"attendance": _ser(result["items"])}
     if name == "create_task" and (is_manager or is_senior):
         task = admin_tasks.create_task(TaskCreate(
             task_name=inp["task_name"], project_id=inp["project_id"],
@@ -227,6 +239,12 @@ def _exec_emp_tool(name: str, inp: dict, emp: EmployeeDB, db: Session) -> dict:
             deadline=inp.get("deadline"), priority=inp.get("priority", "Medium"), status="To Do",
         ), db)
         return {"result": "Task created", "task": _ser(task)}
+    if name == "get_purchase_orders" and is_manager:
+        return {"purchase_orders": _ser(order_svc.list_pos(db))}
+    if name == "get_supply_orders" and is_manager:
+        return {"supply_orders": _ser(order_svc.list_sos(db))}
+    if name == "get_po_summary" and is_manager:
+        return {"summary": _ser(order_svc.get_po_summary(inp["po_id"], db))}
     return {"error": f"Tool '{name}' not available for your role"}
 
 
@@ -240,13 +258,13 @@ def _exec_admin_tool(name: str, inp: dict, db: Session) -> dict:
         return {"tasks": _ser(result["items"])}
     if name == "get_all_leaves":
         result = leave_svc.get_all_leaves(db, page=1, page_size=100, status=inp.get("status"))
-        return {"leaves": result["items"]}
+        return {"leaves": _ser(result["items"])}
     if name == "approve_reject_leave":
         leave = leave_svc.update_leave_status(inp["leave_id"], inp["status"], db)
         return {"result": f"Leave {inp['status']}", "leave": _ser(leave)}
     if name == "get_all_attendance":
         result = att_svc.all_att(db, page=1, page_size=inp.get("limit", 50))
-        return {"attendance": result["items"]}
+        return {"attendance": _ser(result["items"])}
     if name == "create_task":
         task = admin_tasks.create_task(TaskCreate(
             task_name=inp["task_name"], project_id=inp["project_id"],
@@ -254,6 +272,12 @@ def _exec_admin_tool(name: str, inp: dict, db: Session) -> dict:
             deadline=inp.get("deadline"), priority=inp.get("priority", "Medium"), status="To Do",
         ), db)
         return {"result": "Task created", "task": _ser(task)}
+    if name == "get_purchase_orders":
+        return {"purchase_orders": _ser(order_svc.list_pos(db))}
+    if name == "get_supply_orders":
+        return {"supply_orders": _ser(order_svc.list_sos(db))}
+    if name == "get_po_summary":
+        return {"summary": _ser(order_svc.get_po_summary(inp["po_id"], db))}
     return {"error": f"Unknown tool '{name}'"}
 
 
