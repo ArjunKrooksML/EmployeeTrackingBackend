@@ -41,3 +41,6 @@ TWILIO_WA_TASK_TEMPLATE = os.getenv("TWILIO_WA_TASK_TEMPLATE", "")
 # Twilio SMS
 TWILIO_SMS = os.getenv("TWILIO_SMS", "")
 
+# OpenAI
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+

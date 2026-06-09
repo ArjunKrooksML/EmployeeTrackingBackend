@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import admin_employees, admin_projects, admin_tasks, admin_auth, employees, projects, tasks, attendance, leaves, salary, orders
+from routes import admin_employees, admin_projects, admin_tasks, admin_auth, employees, projects, tasks, attendance, leaves, salary, orders, chat
 from database.connection import engine, Base
 
 Base.metadata.create_all(bind=engine)
@@ -30,6 +30,7 @@ app.include_router(attendance.router)
 app.include_router(leaves.router)
 app.include_router(salary.router)
 app.include_router(orders.router)
+app.include_router(chat.router)
 
 
 @app.get("/")

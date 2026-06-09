@@ -13,3 +13,4 @@ gunicorn
 bcrypt
 resend
 twilio
+openai
