@@ -7,6 +7,7 @@ from database.models import Employee as EmployeeDB, Admin as AdminDB, Project as
 from services import attendance as att_svc, leaves as leave_svc, employee_tasks as task_svc
 from services import admin_tasks, admin_employees as emp_svc, employee_projects as proj_svc
 from services import orders as order_svc
+from services.salary import get_my_deductions, get_all_deductions
 from models.leaves import LeaveCreate
 from models.tasks import TaskCreate
 
@@ -21,7 +22,7 @@ Today's date is {today}.
 
 ## What you can do
 You have tools to:
-- View the user's attendance, tasks, leaves, projects, and profile
+- View the user's attendance, tasks, leaves, projects, profile, and payslip history
 - Mark attendance (check-in)
 - Apply, view, and cancel leave requests
 - Update task status and progress
@@ -118,6 +119,7 @@ BASE_TOOLS = [
         "task_id": {"type": "integer"},
         "is_completed": {"type": "boolean"},
     }, ["task_id", "is_completed"]),
+    _fn("get_my_payslips", "Get the current employee's payslip history with salary breakdown.", {}, []),
 ]
 
 MANAGER_TOOLS = [
@@ -145,6 +147,10 @@ MANAGER_TOOLS = [
     _fn("get_po_summary", "Get size-wise supply summary and remaining balance for a specific purchase order.", {
         "po_id": {"type": "integer", "description": "Purchase order ID"},
     }, ["po_id"]),
+    _fn("get_payroll", "Get saved payroll records for all employees for a given month and year.", {
+        "month": {"type": "integer", "description": "Month number 1-12"},
+        "year": {"type": "integer"},
+    }, ["month", "year"]),
 ]
 
 ADMIN_TOOLS = [
@@ -176,6 +182,10 @@ ADMIN_TOOLS = [
     _fn("get_po_summary", "Get size-wise supply summary and remaining balance for a specific purchase order.", {
         "po_id": {"type": "integer"},
     }, ["po_id"]),
+    _fn("get_payroll", "Get saved payroll records for all employees for a given month and year.", {
+        "month": {"type": "integer", "description": "Month number 1-12"},
+        "year": {"type": "integer"},
+    }, ["month", "year"]),
 ]
 
 
@@ -221,6 +231,8 @@ def _exec_emp_tool(name: str, inp: dict, emp: EmployeeDB, db: Session) -> dict:
     if name == "update_task_status":
         task = task_svc.update_task_status(inp["task_id"], emp.employee_id, inp["is_completed"], db)
         return {"result": "Task updated", "task": _ser(task)}
+    if name == "get_my_payslips":
+        return {"payslips": _ser(get_my_deductions(emp.employee_id, db))}
     if name == "get_all_employees" and is_manager:
         return {"employees": _ser(db.query(EmployeeDB).all())}
     if name == "get_all_leaves" and is_manager:
@@ -245,6 +257,8 @@ def _exec_emp_tool(name: str, inp: dict, emp: EmployeeDB, db: Session) -> dict:
         return {"supply_orders": _ser(order_svc.list_sos(db))}
     if name == "get_po_summary" and is_manager:
         return {"summary": _ser(order_svc.get_po_summary(inp["po_id"], db))}
+    if name == "get_payroll" and is_manager:
+        return {"payroll": _ser(get_all_deductions(inp["month"], inp["year"], db))}
     return {"error": f"Tool '{name}' not available for your role"}
 
 
@@ -278,6 +292,8 @@ def _exec_admin_tool(name: str, inp: dict, db: Session) -> dict:
         return {"supply_orders": _ser(order_svc.list_sos(db))}
     if name == "get_po_summary":
         return {"summary": _ser(order_svc.get_po_summary(inp["po_id"], db))}
+    if name == "get_payroll":
+        return {"payroll": _ser(get_all_deductions(inp["month"], inp["year"], db))}
     return {"error": f"Unknown tool '{name}'"}
 
 

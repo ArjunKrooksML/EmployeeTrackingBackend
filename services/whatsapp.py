@@ -77,6 +77,22 @@ def send_leave_status_whatsapp(phone: str, emp_name: str, status: str, leave_dat
     _send(phone, body, config.TWILIO_WA_LEAVE_TEMPLATE, variables)
 
 
+def send_payslip_whatsapp(phone: str, emp_name: str, month_name: str, year: int, net_salary: float):
+    print(f"[whatsapp] send_payslip_whatsapp called — phone: {phone!r}")
+    body = (
+        f"Hi {emp_name}, your payslip for {month_name} {year} has been generated on the SVAAS portal. "
+        f"Net Pay: Rs.{net_salary:,.2f}. Login at {config.PORTAL_URL} to view and download it."
+    )
+    variables = {
+        "1": emp_name,
+        "2": month_name,
+        "3": str(year),
+        "4": f"{net_salary:,.2f}",
+        "5": config.PORTAL_URL,
+    }
+    _send(phone, body, config.TWILIO_WA_PAYSLIP_TEMPLATE, variables)
+
+
 def send_otp_sms(phone: str, otp: str):
     print(f"[sms] send_otp_sms called — phone: {phone!r}")
     if not config.TWILIO_SID or not config.TWILIO_SMS:

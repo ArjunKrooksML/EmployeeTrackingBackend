@@ -12,7 +12,9 @@ DATABASE_URL = os.getenv(
 )
 
 # JWT Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not JWT_SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY is not set in environment")
 JWT_ALGORITHM = "HS256"
 
 # Token TTL (in seconds)
@@ -36,6 +38,7 @@ TWILIO_WA_FROM = os.getenv("TWILIO_WA_FROM", "")
 TWILIO_WA_LEAVE_TEMPLATE = os.getenv("TWILIO_LEAVES", "")
 TWILIO_WA_OTP_TEMPLATE = os.getenv("TWILIO_WA_OTP_TEMPLATE", "")
 TWILIO_WA_TASK_TEMPLATE = os.getenv("TWILIO_WA_TASK_TEMPLATE", "")
+TWILIO_WA_PAYSLIP_TEMPLATE = os.getenv("TWILIO_WA_PAYSLIP_TEMPLATE", "")
 
 
 # Twilio SMS

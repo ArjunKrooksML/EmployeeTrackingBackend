@@ -121,6 +121,38 @@ def send_leave_status_email(to: str, emp_name: str, status: str, leave_date: str
     _send(to=to, subject=f"Leave Request {label} – {leave_date}", html=_wrap(body))
 
 
+def send_payslip_email(to: str, emp_name: str, month_name: str, year: int, gross: float, deductions: float, net: float):
+    body = f"""
+        <p style="margin:0 0 20px;color:#374151;font-size:14px;">Hi <strong>{emp_name}</strong>,</p>
+        <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+            Your payslip for <strong>{month_name} {year}</strong> has been generated.
+            Login to the SVAAS portal to view and download it.
+        </p>
+        <div style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+            <table style="width:100%;border-collapse:collapse;">
+                <tbody>
+                    <tr>
+                        <td style="padding:10px 14px;color:#6b7280;font-size:13px;font-weight:500;">Gross Salary</td>
+                        <td style="padding:10px 14px;color:#111827;font-size:13px;text-align:right;">&#8377;{gross:,.2f}</td>
+                    </tr>
+                    <tr style="background:#f9fafb;">
+                        <td style="padding:10px 14px;color:#6b7280;font-size:13px;font-weight:500;">Total Deductions</td>
+                        <td style="padding:10px 14px;color:#dc2626;font-size:13px;text-align:right;">&#8722;&#8377;{deductions:,.2f}</td>
+                    </tr>
+                    <tr style="background:#f0fdf4;">
+                        <td style="padding:10px 14px;color:#15803d;font-size:14px;font-weight:700;">Net Pay</td>
+                        <td style="padding:10px 14px;color:#15803d;font-size:14px;font-weight:700;text-align:right;">&#8377;{net:,.2f}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <a href="{config.PORTAL_URL}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;">
+            View Payslip
+        </a>
+    """
+    _send(to=to, subject=f"Payslip Ready – {month_name} {year}", html=_wrap(body))
+
+
 def send_task_assigned_email(
     to: str, emp_name: str, task_name: str,
     description: str | None, deadline: str | None

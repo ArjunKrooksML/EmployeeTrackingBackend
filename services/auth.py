@@ -1,63 +1,78 @@
+from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from middleware.helpers import verify_pwd, hash_pwd
 from middleware.jwt import create_tokens, verify_token, create_access_token, create_refresh_token
-from database.models import Admin as AdminDB, Employee as EmpDB
+from database.models import Admin as AdminDB, Employee as EmpDB, RefreshToken
 from models.admin import AdminLogin, AdminPublic
 from models.employees import EmployeeLogin, EmployeePublic
 from services.otp import gen_otp, verify_otp
 from services.email import send_otp_email
 from services.whatsapp import send_otp_whatsapp
+import config
+
+
+def _save_refresh(token: str, user_type: str, user_id: int, db: Session):
+    expires = datetime.now(timezone.utc) + timedelta(seconds=config.REFRESH_TOKEN_EXPIRE_SECONDS)
+    db.add(RefreshToken(token=token, user_type=user_type, user_id=user_id, expires_at=expires))
+    db.commit()
 
 
 def auth_admin(creds: AdminLogin, db: Session) -> dict:
-    # Validate admin credentials and return tokens
     admin = db.query(AdminDB).filter(AdminDB.email == creds.email).first()
     if not admin or not verify_pwd(creds.password, admin.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     access, refresh = create_tokens({"admin_id": admin.id, "email": admin.email, "type": "admin"})
+    _save_refresh(refresh, "admin", admin.id, db)
     return {"access_token": access, "refresh_token": refresh, "user": AdminPublic.model_validate(admin)}
 
 
 def auth_emp(creds: EmployeeLogin, db: Session) -> dict:
-    # Validate employee credentials and return tokens
     emp = db.query(EmpDB).filter(EmpDB.email == creds.email).first()
     if not emp or not verify_pwd(creds.password, emp.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     access, refresh = create_tokens({"employee_id": emp.employee_id, "email": emp.email, "type": "employee"})
+    _save_refresh(refresh, "employee", emp.employee_id, db)
     return {"access_token": access, "refresh_token": refresh, "user": EmployeePublic.model_validate(emp)}
 
 
 def refresh_tok(refresh_token: str, db: Session) -> dict:
     payload = verify_token(refresh_token, token_type="refresh")
+
+    rec = db.query(RefreshToken).filter(RefreshToken.token == refresh_token).first()
+    if not rec:
+        raise HTTPException(status_code=401, detail="Refresh token revoked or not recognised")
+    db.delete(rec)
+    db.flush()
+
     utype = payload.get("type")
     if utype == "admin":
         aid = payload.get("admin_id")
-        if not aid:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
         admin = db.query(AdminDB).filter(AdminDB.id == aid).first()
         if not admin:
             raise HTTPException(status_code=401, detail="Admin not found")
         data = {"admin_id": admin.id, "email": admin.email, "type": "admin"}
-        return {
-            "access_token": create_access_token(data),
-            "refresh_token": create_refresh_token(data),
-            "user": AdminPublic.model_validate(admin),
-        }
+        access, refresh = create_tokens(data)
+        _save_refresh(refresh, "admin", admin.id, db)
+        return {"access_token": access, "refresh_token": refresh, "user": AdminPublic.model_validate(admin)}
     elif utype == "employee":
         eid = payload.get("employee_id")
-        if not eid:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
         emp = db.query(EmpDB).filter(EmpDB.employee_id == eid).first()
         if not emp:
             raise HTTPException(status_code=401, detail="Employee not found")
         data = {"employee_id": emp.employee_id, "email": emp.email, "type": "employee"}
-        return {
-            "access_token": create_access_token(data),
-            "refresh_token": create_refresh_token(data),
-            "user": EmployeePublic.model_validate(emp),
-        }
+        access, refresh = create_tokens(data)
+        _save_refresh(refresh, "employee", emp.employee_id, db)
+        return {"access_token": access, "refresh_token": refresh, "user": EmployeePublic.model_validate(emp)}
     raise HTTPException(status_code=401, detail="Invalid token type")
+
+
+def logout_user(refresh_token: str, db: Session) -> dict:
+    rec = db.query(RefreshToken).filter(RefreshToken.token == refresh_token).first()
+    if rec:
+        db.delete(rec)
+        db.commit()
+    return {"message": "Logged out"}
 
 
 def send_reset_otp(email: str, utype: str, db: Session) -> dict:

@@ -135,6 +135,17 @@ class SOItem(Base):
     balance_qty = Column(Integer, nullable=False)
 
 
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(Text, nullable=False, unique=True, index=True)
+    user_type = Column(String(20), nullable=False)  # "admin" or "employee"
+    user_id = Column(Integer, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class OtpToken(Base):
     __tablename__ = "otp_tokens"
 

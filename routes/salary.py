@@ -6,7 +6,7 @@ from middleware.auth import get_current_employee
 from middleware.rbac import require_hr_or_gm
 from database.models import Employee as EmployeeDB
 from models.salary import SalaryComputeRequest, SalaryDeductionResponse, BulkComputeRequest
-from services.salary import compute_one, compute_all, save_deduction, get_deduction, get_my_deductions
+from services.salary import compute_one, compute_all, save_deduction, get_deduction, get_my_deductions, get_all_deductions
 
 router = APIRouter(prefix="/salary", tags=["salary"])
 
@@ -29,6 +29,11 @@ def preview_all(req: BulkComputeRequest, db: Session = Depends(get_db)):
 @router.post("/save", response_model=SalaryDeductionResponse, dependencies=[Depends(require_hr_or_gm)])
 def save_one(req: SalaryComputeRequest, db: Session = Depends(get_db)):
     return save_deduction(req.employee_id, req.month, req.year, req.advance_deduction, db)
+
+
+@router.get("/saved/{year}/{month}", dependencies=[Depends(require_hr_or_gm)])
+def fetch_all_saved(year: int, month: int, db: Session = Depends(get_db)):
+    return get_all_deductions(month, year, db)
 
 
 @router.get("/{emp_id}/{year}/{month}", dependencies=[Depends(require_hr_or_gm)])

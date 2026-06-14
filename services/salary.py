@@ -4,6 +4,8 @@ from typing import List, Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from database.models import Employee as EmpDB, Attendance as AttDB, Leave as LeaveDB, SalaryDeduction as SalaryDB
+from services.email import send_payslip_email
+from services.whatsapp import send_payslip_whatsapp
 
 
 def _compute(emp: EmpDB, month: int, year: int, advance_deduction: float, db: Session) -> dict:
@@ -119,10 +121,23 @@ def save_deduction(emp_id: int, month: int, year: int, advance_deduction: float,
     try:
         db.commit()
         db.refresh(rec)
-        return rec
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    month_name = calendar.month_name[month]
+    if emp.email:
+        try:
+            send_payslip_email(emp.email, emp.employee_name, month_name, year, data["gross_salary"], data["total_deduction"], data["net_salary"])
+        except Exception as e:
+            print(f"[payslip] email failed: {e}")
+    if emp.phone_no:
+        try:
+            send_payslip_whatsapp(emp.phone_no, emp.employee_name, month_name, year, data["net_salary"])
+        except Exception as e:
+            print(f"[payslip] whatsapp failed: {e}")
+
+    return rec
 
 
 def get_deduction(emp_id: int, month: int, year: int, db: Session) -> Optional[SalaryDB]:
@@ -131,6 +146,20 @@ def get_deduction(emp_id: int, month: int, year: int, db: Session) -> Optional[S
         SalaryDB.month == month,
         SalaryDB.year == year
     ).first()
+
+
+def get_all_deductions(month: int, year: int, db: Session) -> List[dict]:
+    recs = db.query(SalaryDB).filter(
+        SalaryDB.month == month,
+        SalaryDB.year == year
+    ).all()
+    out = []
+    for rec in recs:
+        emp = db.query(EmpDB).filter(EmpDB.employee_id == rec.employee_id).first()
+        d = {c.name: getattr(rec, c.name) for c in rec.__table__.columns}
+        d['employee_name'] = emp.employee_name if emp else ''
+        out.append(d)
+    return out
 
 
 def get_my_deductions(emp_id: int, db: Session) -> List[dict]:
