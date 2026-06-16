@@ -14,3 +14,4 @@ bcrypt
 resend
 twilio
 openai
+boto3

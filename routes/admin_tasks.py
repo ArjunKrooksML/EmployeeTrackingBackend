@@ -1,9 +1,10 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from database.connection import get_db
 from middleware.rbac import require_gm_or_senior
 from services.admin_tasks import list_tasks, create_task, update_task, delete_task
+from services.attachments import upload_att, get_atts, delete_att
 from models.tasks import Task as TaskResp, TaskCreate, TaskUpdate
 from models.pagination import PaginatedResponse
 
@@ -40,3 +41,18 @@ async def edit_task(task_id: int, task: TaskUpdate, db: Session = Depends(get_db
 async def remove_task(task_id: int, db: Session = Depends(get_db), _=Depends(require_gm_or_senior)):
     if not delete_task(task_id, db):
         raise HTTPException(status_code=404, detail="Task not found")
+
+
+@router.post("/{task_id}/attachments")
+async def add_attachment(task_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), _=Depends(require_gm_or_senior)):
+    return upload_att(task_id, file, db)
+
+
+@router.get("/{task_id}/attachments")
+async def list_attachments(task_id: int, db: Session = Depends(get_db), _=Depends(require_gm_or_senior)):
+    return get_atts(task_id, db)
+
+
+@router.delete("/{task_id}/attachments/{att_id}", status_code=204)
+async def remove_attachment(task_id: int, att_id: int, db: Session = Depends(get_db), _=Depends(require_gm_or_senior)):
+    delete_att(att_id, task_id, db)

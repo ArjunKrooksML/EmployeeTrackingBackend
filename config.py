@@ -47,3 +47,10 @@ TWILIO_SMS = os.getenv("TWILIO_SMS", "")
 # OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
+# S3 / Supabase Storage
+SUPABASE_S3_ENDPOINT = os.getenv("SUPABASE_S3_ENDPOINT", "")
+SUPABASE_S3_REGION = os.getenv("SUPABASE_S3_REGION", "ap-south-1")
+SUPABASE_S3_ACCESS_KEY = os.getenv("SUPABASE_S3_ACCESS_KEY", "")
+SUPABASE_S3_SECRET_KEY = os.getenv("SUPABASE_S3_SECRET_KEY", "")
+SUPABASE_S3_BUCKET = os.getenv("SUPABASE_S3_BUCKET", "")
+
