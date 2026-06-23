@@ -10,15 +10,15 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.get("/employee", response_model=List[ProjectResponse])
-async def list_projects(db: Session = Depends(get_db)):
-    """List all projects (employees can view all)"""
+async def list_projects(db: Session = Depends(get_db), _=Depends(get_current_employee)):
+    """List all projects (any logged-in employee can view)"""
     projects = employee_projects.list_all_projects(db)
     return projects
 
 
 @router.post("/employee/create", response_model=ProjectResponse)
-async def create_project(project_data: ProjectCreate, db: Session = Depends(get_db)):
-    """Create a new project (employees can create projects)"""
+async def create_project(project_data: ProjectCreate, db: Session = Depends(get_db), _=Depends(get_current_employee)):
+    """Create a new project (any logged-in employee)"""
     project = employee_projects.create_project(project_data, db)
     return project
 
@@ -28,9 +28,9 @@ async def update_project(
     project_id: int,
     project_data: ProjectUpdate,
     db: Session = Depends(get_db),
-    current_employee = Depends(get_current_employee)
+    _=Depends(get_current_employee)
 ):
-    """Update a project (protected - employees can edit projects)"""
+    """Update a project (any logged-in employee)"""
     project = employee_projects.update_project(project_id, project_data, db)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")

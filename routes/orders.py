@@ -2,10 +2,11 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from database.connection import get_db
+from middleware.rbac import require_any_user
 from services import orders as svc
 from models.orders import POCreate, SOCreate, POResponse, SOResponse, POSizeSummary
 
-router = APIRouter(prefix="/orders", tags=["orders"])
+router = APIRouter(prefix="/orders", tags=["orders"], dependencies=[Depends(require_any_user)])
 
 
 @router.get("/po", response_model=List[POResponse])

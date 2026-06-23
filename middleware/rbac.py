@@ -17,6 +17,27 @@ def _get_payload(creds: HTTPAuthorizationCredentials):
     return verify_token(creds.credentials, token_type="access")
 
 
+def require_any_user(
+    creds: HTTPAuthorizationCredentials = Depends(_sec),
+    db: Session = Depends(get_db)
+):
+    # Admin tokens always pass through
+    payload = _get_payload(creds)
+    if payload.get("admin_id"):
+        admin = db.query(AdminDB).filter(AdminDB.id == payload["admin_id"]).first()
+        if admin:
+            return admin
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin not found")
+    # Any employee token, regardless of role
+    emp_id = payload.get("employee_id")
+    if not emp_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    emp = db.query(EmpDB).filter(EmpDB.employee_id == emp_id).first()
+    if not emp:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Employee not found")
+    return emp
+
+
 def require_hr_or_gm(
     creds: HTTPAuthorizationCredentials = Depends(_sec),
     db: Session = Depends(get_db)
