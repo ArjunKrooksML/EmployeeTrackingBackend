@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Text, DateTime, Boolean, BigInteger, Time, Float, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Date, Text, DateTime, Boolean, BigInteger, Time, Float, ForeignKey, UniqueConstraint, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import ENUM
 from .connection import Base
@@ -162,6 +162,32 @@ class OtpToken(Base):
     email = Column(String(255), primary_key=True)
     otp = Column(String(6), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class DPR(Base):
+    __tablename__ = "dpr"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=False, index=True)
+    date = Column(Date, nullable=False)
+    description = Column(Text, nullable=False)
+    uploaded_by = Column(String(150), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Expense(Base):
+    __tablename__ = "expenses"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    employee_id = Column(Integer, ForeignKey("employees.employee_id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    date = Column(Date, nullable=False)
+    items = Column(JSON, nullable=False)
+    attachment_path = Column(Text, nullable=True)
+    attachment_name = Column(String(255), nullable=True)
+    status = Column(String(50), nullable=False, default='pending')
+    remarks = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class SalaryDeduction(Base):
