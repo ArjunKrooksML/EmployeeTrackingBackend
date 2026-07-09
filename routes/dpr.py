@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import Optional
-from pydantic import BaseModel
 from database.connection import get_db
 from middleware.rbac import require_any_user
 from models.dpr import DPRCreate, DPRUpdate, DPRResp
@@ -15,19 +14,9 @@ def _name(user) -> str:
     return getattr(user, 'employee_name', None) or getattr(user, 'name', 'Unknown')
 
 
-class ForgingToggle(BaseModel):
-    has_forging: bool
-
-
 @router.get("/projects")
 def list_projects(db: Session = Depends(get_db), _=Depends(require_any_user)):
     return svc.all_projects(db)
-
-
-@router.patch("/projects/{project_id}/forging")
-def toggle_forging(project_id: int, data: ForgingToggle,
-                   db: Session = Depends(get_db), _=Depends(require_any_user)):
-    return svc.set_forging(project_id, data.has_forging, db)
 
 
 @router.get("/{project_id}", response_model=PaginatedResponse[DPRResp])
@@ -50,11 +39,11 @@ def get_dprs(
 def create_dpr(project_id: int, data: DPRCreate,
                db: Session = Depends(get_db), user=Depends(require_any_user)):
     return svc.create_dpr(project_id, data.date, data.mm16, data.mm20, data.mm25,
-                          data.mm32, data.forging_qty, _name(user), db)
+                          data.mm32, data.operator_name, _name(user), db)
 
 
 @router.put("/{entry_id}", response_model=DPRResp)
 def update_dpr(entry_id: int, data: DPRUpdate,
                db: Session = Depends(get_db), _=Depends(require_any_user)):
     return svc.update_dpr(entry_id, data.date, data.mm16, data.mm20, data.mm25,
-                          data.mm32, data.forging_qty, db)
+                          data.mm32, data.operator_name, db)

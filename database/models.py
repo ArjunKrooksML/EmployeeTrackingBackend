@@ -37,7 +37,6 @@ class Project(Base):
     start_date = Column(Date, nullable=False)
     completion_date = Column(Date, nullable=True)
     po_prefix = Column(String(50), nullable=True)
-    has_forging = Column(Boolean, nullable=False, default=False)
 
 
 class Task(Base):
@@ -175,7 +174,7 @@ class DPR(Base):
     mm20 = Column(Integer, nullable=True, default=0)
     mm25 = Column(Integer, nullable=True, default=0)
     mm32 = Column(Integer, nullable=True, default=0)
-    forging_qty = Column(Integer, nullable=True, default=0)
+    operator_name = Column(String(150), nullable=True, default='')
     uploaded_by = Column(String(150), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
