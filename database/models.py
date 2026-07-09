@@ -37,6 +37,7 @@ class Project(Base):
     start_date = Column(Date, nullable=False)
     completion_date = Column(Date, nullable=True)
     po_prefix = Column(String(50), nullable=True)
+    has_forging = Column(Boolean, nullable=False, default=False)
 
 
 class Task(Base):
@@ -170,7 +171,11 @@ class DPR(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     project_id = Column(Integer, ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False)
-    description = Column(Text, nullable=False)
+    mm16 = Column(Integer, nullable=True, default=0)
+    mm20 = Column(Integer, nullable=True, default=0)
+    mm25 = Column(Integer, nullable=True, default=0)
+    mm32 = Column(Integer, nullable=True, default=0)
+    forging_qty = Column(Integer, nullable=True, default=0)
     uploaded_by = Column(String(150), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

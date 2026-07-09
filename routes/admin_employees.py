@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
 from database.connection import get_db
-from middleware.rbac import require_hr_or_gm
+from middleware.rbac import require_hr_or_gm, require_hr_gm_or_senior
 from services.admin_employees import add_emp, get_all, get_by_id, update_emp, delete_emp, import_emps
 from models.employees import EmployeeCreate, EmployeeUpdate, EmployeeResponse, EmployeeImport
 from models.pagination import PaginatedResponse
@@ -20,7 +20,7 @@ async def list_emps(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=10000),
     db: Session = Depends(get_db),
-    _=Depends(require_hr_or_gm),
+    _=Depends(require_hr_gm_or_senior),
 ):
     skip = (page - 1) * page_size
     return get_all(db, skip=skip, limit=page_size, page=page, page_size=page_size)
