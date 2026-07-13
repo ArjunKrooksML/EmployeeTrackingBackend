@@ -1,13 +1,27 @@
-import uuid
-from fastapi import UploadFile, HTTPException
+import uuid, json
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from database.models import Expense, Employee
 import services.storage as storage
 from datetime import date
-from typing import Optional
+from typing import Optional, List
+
+
+def _parse_atts(path: Optional[str], name: Optional[str]) -> list:
+    if not path:
+        return []
+    try:
+        parsed = json.loads(path)
+        if isinstance(parsed, list):
+            return parsed
+    except Exception:
+        pass
+    # old single-file format
+    return [{"path": path, "name": name or path.split('/')[-1]}]
 
 
 def _fmt(e: Expense, emp_name: Optional[str]) -> dict:
+    atts = _parse_atts(e.attachment_path, e.attachment_name)
     return {
         "id": e.id,
         "employee_id": e.employee_id,
@@ -16,8 +30,7 @@ def _fmt(e: Expense, emp_name: Optional[str]) -> dict:
         "date": e.date.isoformat() if e.date else None,
         "date_to": e.date_to.isoformat() if e.date_to else None,
         "items": e.items if isinstance(e.items, list) else [],
-        "attachment_url": storage.signed_url(e.attachment_path) if e.attachment_path else None,
-        "attachment_name": e.attachment_name,
+        "attachments": [{"url": storage.signed_url(a["path"]), "name": a["name"]} for a in atts],
         "status": e.status,
         "remarks": e.remarks,
         "created_at": e.created_at.isoformat() if e.created_at else None,
@@ -29,16 +42,16 @@ def _get_name(employee_id: int, db: Session) -> Optional[str]:
     return emp.employee_name if emp else None
 
 
-def create(employee_id: int, title: str, d: date, items: list, file: Optional[UploadFile],
-           date_to: Optional[date], db: Session) -> dict:
-    path = name = None
-    if file and file.filename:
-        data = file.file.read()
-        path = f"expenses/{employee_id}/{uuid.uuid4().hex}_{file.filename}"
-        storage.upload(path, data, file.content_type or 'application/octet-stream')
-        name = file.filename
+def create(employee_id: int, title: str, d: date, items: list,
+           file_data: List[tuple], date_to: Optional[date], db: Session) -> dict:
+    atts = []
+    for filename, data, content_type in file_data:
+        path = f"expenses/{employee_id}/{uuid.uuid4().hex}_{filename}"
+        storage.upload(path, data, content_type)
+        atts.append({"path": path, "name": filename})
+    att_json = json.dumps(atts) if atts else None
     exp = Expense(employee_id=employee_id, title=title, date=d, date_to=date_to,
-                  items=items, attachment_path=path, attachment_name=name)
+                  items=items, attachment_path=att_json, attachment_name=None)
     db.add(exp)
     db.commit()
     db.refresh(exp)
