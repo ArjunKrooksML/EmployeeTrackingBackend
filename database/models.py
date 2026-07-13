@@ -175,6 +175,7 @@ class DPR(Base):
     mm25 = Column(Integer, nullable=True, default=0)
     mm32 = Column(Integer, nullable=True, default=0)
     operator_name = Column(String(150), nullable=True, default='')
+    description = Column(Text, nullable=True, default='')
     uploaded_by = Column(String(150), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -187,6 +188,7 @@ class Expense(Base):
     title = Column(String(255), nullable=False)
     date = Column(Date, nullable=False)
     items = Column(JSON, nullable=False)
+    date_to = Column(Date, nullable=True)
     attachment_path = Column(Text, nullable=True)
     attachment_name = Column(String(255), nullable=True)
     status = Column(String(50), nullable=False, default='pending')

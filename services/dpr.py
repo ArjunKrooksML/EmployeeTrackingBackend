@@ -22,11 +22,12 @@ def get_dprs(project_id: int, db: Session, skip: int = 0, limit: int = 20,
 
 
 def create_dpr(project_id: int, d: date, mm16: int, mm20: int, mm25: int, mm32: int,
-               operator_name: str, uploaded_by: str, db: Session):
+               operator_name: str, description: str, uploaded_by: str, db: Session):
     if not db.query(Project).filter(Project.project_id == project_id).first():
         raise HTTPException(404, "Project not found")
     entry = DPR(project_id=project_id, date=d, mm16=mm16, mm20=mm20,
-                mm25=mm25, mm32=mm32, operator_name=operator_name, uploaded_by=uploaded_by)
+                mm25=mm25, mm32=mm32, operator_name=operator_name,
+                description=description, uploaded_by=uploaded_by)
     db.add(entry)
     db.commit()
     db.refresh(entry)
@@ -34,7 +35,7 @@ def create_dpr(project_id: int, d: date, mm16: int, mm20: int, mm25: int, mm32: 
 
 
 def update_dpr(entry_id: int, d: date, mm16: int, mm20: int, mm25: int, mm32: int,
-               operator_name: str, db: Session):
+               operator_name: str, description: str, db: Session):
     entry = db.query(DPR).filter(DPR.id == entry_id).first()
     if not entry:
         raise HTTPException(404, "DPR entry not found")
@@ -44,6 +45,7 @@ def update_dpr(entry_id: int, d: date, mm16: int, mm20: int, mm25: int, mm32: in
     entry.mm25 = mm25
     entry.mm32 = mm32
     entry.operator_name = operator_name
+    entry.description = description
     db.commit()
     db.refresh(entry)
     return entry

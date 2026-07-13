@@ -16,6 +16,7 @@ def _fmt(e: Expense, db: Session) -> dict:
         "employee_name": emp.employee_name if emp else None,
         "title": e.title,
         "date": e.date.isoformat() if e.date else None,
+        "date_to": e.date_to.isoformat() if e.date_to else None,
         "items": items,
         "attachment_url": storage.signed_url(e.attachment_path) if e.attachment_path else None,
         "attachment_name": e.attachment_name,
@@ -25,15 +26,16 @@ def _fmt(e: Expense, db: Session) -> dict:
     }
 
 
-def create(employee_id: int, title: str, d: date, items: list, file: Optional[UploadFile], db: Session) -> dict:
+def create(employee_id: int, title: str, d: date, items: list, file: Optional[UploadFile],
+           date_to: Optional[date], db: Session) -> dict:
     path = name = None
     if file and file.filename:
         data = file.file.read()
         path = f"expenses/{employee_id}/{uuid.uuid4().hex}_{file.filename}"
         storage.upload(path, data, file.content_type or 'application/octet-stream')
         name = file.filename
-    exp = Expense(employee_id=employee_id, title=title, date=d, items=items,
-                  attachment_path=path, attachment_name=name)
+    exp = Expense(employee_id=employee_id, title=title, date=d, date_to=date_to,
+                  items=items, attachment_path=path, attachment_name=name)
     db.add(exp)
     db.commit()
     db.refresh(exp)

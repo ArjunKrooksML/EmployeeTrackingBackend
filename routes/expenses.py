@@ -20,6 +20,7 @@ def my_expenses(emp: EmpDB = Depends(get_current_employee), db: Session = Depend
 async def create_expense(
     title: str = Form(...),
     date: str = Form(...),
+    date_to: Optional[str] = Form(None),
     items: str = Form(...),
     file: Optional[UploadFile] = File(None),
     emp: EmpDB = Depends(get_current_employee),
@@ -33,4 +34,5 @@ async def create_expense(
         d = datetime.date.fromisoformat(date)
     except Exception:
         raise HTTPException(400, "Invalid date")
-    return svc.create(emp.employee_id, title, d, items_list, file if file and file.filename else None, db)
+    dt = datetime.date.fromisoformat(date_to) if date_to else None
+    return svc.create(emp.employee_id, title, d, items_list, file if file and file.filename else None, dt, db)

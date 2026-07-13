@@ -39,11 +39,11 @@ def get_dprs(
 def create_dpr(project_id: int, data: DPRCreate,
                db: Session = Depends(get_db), user=Depends(require_any_user)):
     return svc.create_dpr(project_id, data.date, data.mm16, data.mm20, data.mm25,
-                          data.mm32, data.operator_name, _name(user), db)
+                          data.mm32, data.operator_name, data.description, _name(user), db)
 
 
 @router.put("/{entry_id}", response_model=DPRResp)
 def update_dpr(entry_id: int, data: DPRUpdate,
                db: Session = Depends(get_db), _=Depends(require_any_user)):
     return svc.update_dpr(entry_id, data.date, data.mm16, data.mm20, data.mm25,
-                          data.mm32, data.operator_name, db)
+                          data.mm32, data.operator_name, data.description, db)

@@ -10,6 +10,7 @@ class DPRCreate(BaseModel):
     mm25: int = 0
     mm32: int = 0
     operator_name: str = ''
+    description: str = ''
 
 
 class DPRUpdate(BaseModel):
@@ -19,6 +20,7 @@ class DPRUpdate(BaseModel):
     mm25: int = 0
     mm32: int = 0
     operator_name: str = ''
+    description: str = ''
 
 
 class DPRResp(BaseModel):
@@ -30,6 +32,7 @@ class DPRResp(BaseModel):
     mm25: int = 0
     mm32: int = 0
     operator_name: str = ''
+    description: str = ''
     uploaded_by: str
     created_at: Optional[datetime] = None
 
