@@ -6,6 +6,7 @@ from database.models import PurchaseOrder, POItem, SupplyOrder, SOItem, Project
 from models.orders import POCreate, SOCreate
 
 
+# Used for single-record ops (get, create, update)
 def _po_dict(po: PurchaseOrder, db: Session) -> dict:
     proj = db.query(Project).filter(Project.project_id == po.project_id).first() if po.project_id else None
     items = db.query(POItem).filter(POItem.po_id == po.id).all()
@@ -53,7 +54,22 @@ def create_po(data: POCreate, db: Session) -> dict:
 
 def list_pos(db: Session) -> List[dict]:
     pos = db.query(PurchaseOrder).order_by(PurchaseOrder.id.desc()).all()
-    return [_po_dict(po, db) for po in pos]
+    if not pos:
+        return []
+    po_ids = [po.id for po in pos]
+    proj_ids = {po.project_id for po in pos if po.project_id}
+    items_map: dict = {}
+    for item in db.query(POItem).filter(POItem.po_id.in_(po_ids)).all():
+        items_map.setdefault(item.po_id, []).append(item)
+    proj_map = {p.project_id: p.name for p in db.query(Project).filter(Project.project_id.in_(proj_ids)).all()} if proj_ids else {}
+    return [{
+        "id": po.id,
+        "po_number": po.po_number,
+        "project_id": po.project_id,
+        "project_name": proj_map.get(po.project_id),
+        "created_at": po.created_at,
+        "items": [{"id": i.id, "size": i.size, "quantity": i.quantity} for i in items_map.get(po.id, [])],
+    } for po in pos]
 
 
 def get_po(po_id: int, db: Session) -> dict:
@@ -126,6 +142,48 @@ def delete_po(po_id: int, db: Session) -> dict:
     return {"message": "Deleted"}
 
 
+def list_sos(db: Session) -> List[dict]:
+    sos = db.query(SupplyOrder).order_by(SupplyOrder.id.desc()).all()
+    if not sos:
+        return []
+    so_ids = [so.id for so in sos]
+    po_ids = {so.po_id for so in sos}
+    po_map = {po.id: po for po in db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids)).all()}
+    proj_ids = {po.project_id for po in po_map.values() if po.project_id}
+    proj_map = {p.project_id: p.name for p in db.query(Project).filter(Project.project_id.in_(proj_ids)).all()} if proj_ids else {}
+    items_map: dict = {}
+    for item in db.query(SOItem).filter(SOItem.so_id.in_(so_ids)).all():
+        items_map.setdefault(item.so_id, []).append(item)
+    result = []
+    for so in sos:
+        po = po_map.get(so.po_id)
+        result.append({
+            "id": so.id,
+            "po_id": so.po_id,
+            "po_number": po.po_number if po else "",
+            "invoice_number": so.invoice_number,
+            "project_name": proj_map.get(po.project_id) if po and po.project_id else None,
+            "created_at": so.created_at,
+            "items": [{"id": i.id, "size": i.size, "supplied_qty": i.supplied_qty, "balance_qty": i.balance_qty} for i in items_map.get(so.id, [])],
+        })
+    return result
+
+
+def create_so(data: SOCreate, db: Session) -> dict:
+    if not db.query(PurchaseOrder).filter(PurchaseOrder.id == data.po_id).first():
+        raise HTTPException(404, "PO not found")
+    if not data.items:
+        raise HTTPException(400, "At least one item is required")
+    so = SupplyOrder(po_id=data.po_id, invoice_number=data.invoice_number or None)
+    db.add(so)
+    db.flush()
+    for item in data.items:
+        db.add(SOItem(so_id=so.id, size=item.size, supplied_qty=item.supplied_qty, balance_qty=item.balance_qty))
+    db.commit()
+    db.refresh(so)
+    return _so_dict(so, db)
+
+
 def update_so(so_id: int, data: SOCreate, db: Session) -> dict:
     so = db.query(SupplyOrder).filter(SupplyOrder.id == so_id).first()
     if not so:
@@ -148,23 +206,3 @@ def delete_so(so_id: int, db: Session) -> dict:
     db.delete(so)
     db.commit()
     return {"message": "Deleted"}
-
-
-def create_so(data: SOCreate, db: Session) -> dict:
-    if not db.query(PurchaseOrder).filter(PurchaseOrder.id == data.po_id).first():
-        raise HTTPException(404, "PO not found")
-    if not data.items:
-        raise HTTPException(400, "At least one item is required")
-    so = SupplyOrder(po_id=data.po_id, invoice_number=data.invoice_number or None)
-    db.add(so)
-    db.flush()
-    for item in data.items:
-        db.add(SOItem(so_id=so.id, size=item.size, supplied_qty=item.supplied_qty, balance_qty=item.balance_qty))
-    db.commit()
-    db.refresh(so)
-    return _so_dict(so, db)
-
-
-def list_sos(db: Session) -> List[dict]:
-    sos = db.query(SupplyOrder).order_by(SupplyOrder.id.desc()).all()
-    return [_so_dict(so, db) for so in sos]
