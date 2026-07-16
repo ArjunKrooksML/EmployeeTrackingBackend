@@ -37,11 +37,11 @@ def do_checkin(emp_id: int, db: Session, lat: Optional[float] = None, lng: Optio
     return att
 
 
-def get_att(emp_id: int, db: Session):
-    # Fetch all attendance for one employee, newest first
-    return db.query(Attendance).filter(
-        Attendance.employee_id == emp_id
-    ).order_by(Attendance.date.desc()).all()
+def get_att(emp_id: int, db: Session, year: int = None):
+    q = db.query(Attendance).filter(Attendance.employee_id == emp_id)
+    if year:
+        q = q.filter(Attendance.date >= date(year, 1, 1), Attendance.date <= date(year, 12, 31))
+    return q.order_by(Attendance.date.desc()).all()
 
 
 def all_att(db: Session, skip: int = 0, limit: int = 20, page: int = 1, page_size: int = 20):

@@ -20,10 +20,10 @@ def checkin(data: CheckinReq, emp: EmpDB = Depends(get_current_employee), db: Se
 
 
 @router.get("/attendance/employee/{employee_id}", response_model=List[AttResp])
-def my_att(employee_id: int, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+def my_att(employee_id: int, year: int = Query(None), emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
     if employee_id != emp.employee_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access another employee's attendance")
-    return svc.get_att(employee_id, db)
+    return svc.get_att(employee_id, db, year=year)
 
 
 @router.get("/attendance/all", response_model=PaginatedResponse[AttWithEmp])
