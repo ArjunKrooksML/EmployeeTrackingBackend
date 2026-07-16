@@ -14,15 +14,21 @@ router = APIRouter()
 
 @router.post("/attendance/checkin", response_model=AttResp)
 def checkin(data: CheckinReq, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
-    if data.employee_id != emp.employee_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot check in for another employee")
-    return svc.do_checkin(data.employee_id, db, data.lat, data.lng)
+    return svc.do_checkin(emp.employee_id, db, data.lat, data.lng)
+
+
+@router.get("/attendance/my", response_model=List[AttResp])
+def my_att(year: int = Query(None), emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+    return svc.get_att(emp.employee_id, db, year=year)
 
 
 @router.get("/attendance/employee/{employee_id}", response_model=List[AttResp])
-def my_att(employee_id: int, year: int = Query(None), emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
-    if employee_id != emp.employee_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access another employee's attendance")
+def admin_get_employee_att(
+    employee_id: int,
+    year: int = Query(None),
+    db: Session = Depends(get_db),
+    _=Depends(require_hr_or_gm),
+):
     return svc.get_att(employee_id, db, year=year)
 
 

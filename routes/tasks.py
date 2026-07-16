@@ -13,11 +13,9 @@ _UPLOAD_ROLES = {'hr', 'gm', 'senior'}
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.get("/employee/{employee_id}", response_model=List[TaskResponse])
-async def get_employee_tasks(employee_id: int, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
-    if employee_id != emp.employee_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access another employee's tasks")
-    return employee_tasks.get_employee_tasks(employee_id, db)
+@router.get("/my", response_model=List[TaskResponse])
+async def get_my_tasks(emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+    return employee_tasks.get_employee_tasks(emp.employee_id, db)
 
 
 @router.get("/{task_id}/attachments")
@@ -42,11 +40,8 @@ async def remove_attachment(task_id: int, att_id: int, emp: EmpDB = Depends(get_
 @router.put("/{task_id}/complete")
 async def mark_task_complete(
     task_id: int,
-    employee_id: int,
     is_completed: bool = True,
     emp: EmpDB = Depends(get_current_employee),
     db: Session = Depends(get_db)
 ):
-    if employee_id != emp.employee_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot update another employee's task")
-    return employee_tasks.update_task_status(task_id, employee_id, is_completed, db)
+    return employee_tasks.update_task_status(task_id, emp.employee_id, is_completed, db)

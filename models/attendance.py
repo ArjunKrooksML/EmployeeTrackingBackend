@@ -4,7 +4,6 @@ from typing import Optional
 
 
 class CheckinReq(BaseModel):
-    employee_id: int
     lat: Optional[float] = None
     lng: Optional[float] = None
 

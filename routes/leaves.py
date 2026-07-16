@@ -15,16 +15,13 @@ router = APIRouter(prefix="/leaves", tags=["Leaves"])
 
 @router.post("/request", response_model=LeaveResponse)
 def submit_leave_request(data: LeaveCreate, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
-    if data.employee_id != emp.employee_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot submit leave for another employee")
+    data.employee_id = emp.employee_id
     return request_leave(data, db)
 
 
-@router.get("/employee/{emp_id}", response_model=List[LeaveResponse])
-def fetch_employee_leaves(emp_id: int, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
-    if emp_id != emp.employee_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access another employee's leaves")
-    return get_employee_leaves(emp_id, db)
+@router.get("/my", response_model=List[LeaveResponse])
+def fetch_my_leaves(emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+    return get_employee_leaves(emp.employee_id, db)
 
 
 @router.get("/all", response_model=PaginatedResponse[AdminLeaveResponse], dependencies=[Depends(require_hr_or_gm)])
@@ -44,7 +41,5 @@ def change_leave_status(leave_id: int, update_data: LeaveUpdateStatus, db: Sessi
 
 
 @router.delete("/{leave_id}")
-def cancel_leave_request(leave_id: int, employee_id: int = Query(...), emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
-    if employee_id != emp.employee_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot cancel another employee's leave")
-    return cancel_leave(leave_id, employee_id, db)
+def cancel_leave_request(leave_id: int, emp: EmpDB = Depends(get_current_employee), db: Session = Depends(get_db)):
+    return cancel_leave(leave_id, emp.employee_id, db)

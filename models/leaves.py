@@ -3,10 +3,10 @@ from typing import Optional
 from datetime import date, datetime
 
 class LeaveCreate(BaseModel):
-    employee_id: int
-    leave_type: str  # 'casual', 'sick', 'emergency'
+    employee_id: Optional[int] = None
+    leave_type: str
     leave_date: date
-    day_type: str    # 'full', 'first_half', 'second_half'
+    day_type: str
     reason: Optional[str] = None
 
 class LeaveUpdateStatus(BaseModel):
