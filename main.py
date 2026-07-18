@@ -1,10 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import admin_employees, admin_projects, admin_tasks, admin_auth, employees, projects, tasks, attendance, leaves, salary, orders, chat, dpr, expenses, admin_expenses
-from database.connection import engine, Base
-
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(
     title="Employee Tracking System API",
     description="API for managing employees, projects, tasks, and attendance",

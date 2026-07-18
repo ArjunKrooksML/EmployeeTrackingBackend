@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
-from typing import List
 from database.connection import get_db
 from middleware.auth import get_current_employee
 from middleware.rbac import require_hr_or_gm
 from database.models import Employee as EmployeeDB
 from models.salary import SalaryComputeRequest, SalaryDeductionResponse, BulkComputeRequest
 from services.salary import compute_one, compute_all, save_deduction, get_deduction, get_my_deductions, get_all_deductions
+from services.email import send_payslip_email
+from services.whatsapp import send_payslip_whatsapp
 
 router = APIRouter(prefix="/salary", tags=["salary"])
 
@@ -27,8 +28,13 @@ def preview_all(req: BulkComputeRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/save", response_model=SalaryDeductionResponse, dependencies=[Depends(require_hr_or_gm)])
-def save_one(req: SalaryComputeRequest, db: Session = Depends(get_db)):
-    return save_deduction(req.employee_id, req.month, req.year, req.advance_deduction, db)
+def save_one(req: SalaryComputeRequest, bg: BackgroundTasks, db: Session = Depends(get_db)):
+    rec, notif = save_deduction(req.employee_id, req.month, req.year, req.advance_deduction, db)
+    if notif['email']:
+        bg.add_task(send_payslip_email, notif['email'], notif['name'], notif['month_name'], notif['year'], notif['gross'], notif['deduction'], notif['net'])
+    if notif['phone']:
+        bg.add_task(send_payslip_whatsapp, notif['phone'], notif['name'], notif['month_name'], notif['year'], notif['net'])
+    return rec
 
 
 @router.get("/saved/{year}/{month}", dependencies=[Depends(require_hr_or_gm)])

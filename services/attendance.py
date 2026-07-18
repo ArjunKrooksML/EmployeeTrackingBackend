@@ -8,10 +8,7 @@ from models.attendance import AttUpdate
 IST = timezone(timedelta(hours=5, minutes=30))
 
 def do_checkin(emp_id: int, db: Session, lat: Optional[float] = None, lng: Optional[float] = None):
-    # Verify employee exists
-    emp = db.query(Employee).filter(Employee.employee_id == emp_id).first()
-    if not emp:
-        raise HTTPException(status_code=404, detail=f"Employee {emp_id} not found")
+    # Employee already validated by auth middleware
     now_ist = datetime.now(IST)
     today = now_ist.date()
     now = now_ist.time()

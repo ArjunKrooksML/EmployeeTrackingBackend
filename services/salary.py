@@ -1,38 +1,15 @@
 import calendar
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from database.models import Employee as EmpDB, Attendance as AttDB, Leave as LeaveDB, SalaryDeduction as SalaryDB
-from services.email import send_payslip_email
-from services.whatsapp import send_payslip_whatsapp
 
 
-def _compute(emp: EmpDB, month: int, year: int, advance_deduction: float, db: Session) -> dict:
-    from_date = date(year, month, 1)
-    to_date = date(year, month, calendar.monthrange(year, month)[1])
-
-    att_records = db.query(AttDB).filter(
-        AttDB.employee_id == emp.employee_id,
-        AttDB.date >= from_date,
-        AttDB.date <= to_date
-    ).all()
-
-    # Emergency leave dates — these are exempt from deductions
-    emergency_dates = {
-        str(l.leave_date) for l in db.query(LeaveDB).filter(
-            LeaveDB.employee_id == emp.employee_id,
-            LeaveDB.leave_date >= from_date,
-            LeaveDB.leave_date <= to_date,
-            LeaveDB.status == 'approved',
-            LeaveDB.leave_type == 'emergency'
-        ).all()
-    }
-
+def _calc(emp: EmpDB, month: int, year: int, advance_deduction: float,
+          att_records: list, emergency_dates: set) -> dict:
     lates = sum(1 for a in att_records if a.attendance == 'late')
-    # absent with check-in = half-day (checked in at/after 2pm)
     half_day_absents = sum(1 for a in att_records if a.attendance == 'absent' and a.checkin is not None)
-    # absent without check-in = full absent, excluding emergency leave dates
     full_absents = sum(
         1 for a in att_records
         if a.attendance == 'absent' and a.checkin is None and str(a.date) not in emergency_dates
@@ -48,10 +25,8 @@ def _compute(emp: EmpDB, month: int, year: int, advance_deduction: float, db: Se
     gross = emp.basic + emp.da + emp.hra + emp.others
     working_days = calendar.monthrange(year, month)[1]
     daily_rate = gross / working_days if working_days else 0
-
     leave_deduction = round(total_deductible * daily_rate, 2)
     total_deduction = round(leave_deduction + advance_deduction, 2)
-    net_salary = round(gross - total_deduction, 2)
 
     return {
         "employee_id": emp.employee_id,
@@ -71,9 +46,29 @@ def _compute(emp: EmpDB, month: int, year: int, advance_deduction: float, db: Se
         "leave_deduction": leave_deduction,
         "advance_deduction": advance_deduction,
         "total_deduction": total_deduction,
-        "net_salary": net_salary,
+        "net_salary": round(gross - total_deduction, 2),
         "working_days": working_days,
     }
+
+
+def _compute(emp: EmpDB, month: int, year: int, advance_deduction: float, db: Session) -> dict:
+    from_date = date(year, month, 1)
+    to_date = date(year, month, calendar.monthrange(year, month)[1])
+    att = db.query(AttDB).filter(
+        AttDB.employee_id == emp.employee_id,
+        AttDB.date >= from_date,
+        AttDB.date <= to_date
+    ).all()
+    emergency = {
+        str(l.leave_date) for l in db.query(LeaveDB).filter(
+            LeaveDB.employee_id == emp.employee_id,
+            LeaveDB.leave_date >= from_date,
+            LeaveDB.leave_date <= to_date,
+            LeaveDB.status == 'approved',
+            LeaveDB.leave_type == 'emergency'
+        ).all()
+    }
+    return _calc(emp, month, year, advance_deduction, att, emergency)
 
 
 def compute_one(emp_id: int, month: int, year: int, advance_deduction: float, db: Session) -> dict:
@@ -84,21 +79,53 @@ def compute_one(emp_id: int, month: int, year: int, advance_deduction: float, db
 
 
 def compute_all(month: int, year: int, db: Session) -> List[dict]:
+    from_date = date(year, month, 1)
+    to_date = date(year, month, calendar.monthrange(year, month)[1])
+
     emps = db.query(EmpDB).all()
-    results = []
-    for emp in emps:
-        # Use saved advance_deduction if a record already exists, else 0
-        saved = db.query(SalaryDB).filter(
-            SalaryDB.employee_id == emp.employee_id,
+    if not emps:
+        return []
+    emp_ids = [e.employee_id for e in emps]
+
+    advances = {
+        s.employee_id: s.advance_deduction
+        for s in db.query(SalaryDB).filter(
+            SalaryDB.employee_id.in_(emp_ids),
             SalaryDB.month == month,
             SalaryDB.year == year
-        ).first()
-        adv = saved.advance_deduction if saved else 0.0
-        results.append(_compute(emp, month, year, adv, db))
-    return results
+        ).all()
+    }
+
+    att_by_emp: dict = {}
+    for a in db.query(AttDB).filter(
+        AttDB.employee_id.in_(emp_ids),
+        AttDB.date >= from_date,
+        AttDB.date <= to_date
+    ).all():
+        att_by_emp.setdefault(a.employee_id, []).append(a)
+
+    leaves_by_emp: dict = {}
+    for l in db.query(LeaveDB).filter(
+        LeaveDB.employee_id.in_(emp_ids),
+        LeaveDB.leave_date >= from_date,
+        LeaveDB.leave_date <= to_date,
+        LeaveDB.status == 'approved',
+        LeaveDB.leave_type == 'emergency'
+    ).all():
+        leaves_by_emp.setdefault(l.employee_id, set()).add(str(l.leave_date))
+
+    return [
+        _calc(
+            emp, month, year,
+            advances.get(emp.employee_id, 0.0),
+            att_by_emp.get(emp.employee_id, []),
+            leaves_by_emp.get(emp.employee_id, set()),
+        )
+        for emp in emps
+    ]
 
 
-def save_deduction(emp_id: int, month: int, year: int, advance_deduction: float, db: Session) -> SalaryDB:
+def save_deduction(emp_id: int, month: int, year: int, advance_deduction: float, db: Session) -> Tuple:
     emp = db.query(EmpDB).filter(EmpDB.employee_id == emp_id).first()
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
@@ -112,7 +139,7 @@ def save_deduction(emp_id: int, month: int, year: int, advance_deduction: float,
 
     if rec:
         for k, v in data.items():
-            if k not in ('employee_name',) and hasattr(rec, k):
+            if k != 'employee_name' and hasattr(rec, k):
                 setattr(rec, k, v)
     else:
         rec = SalaryDB(**{k: v for k, v in data.items() if k != 'employee_name'})
@@ -125,19 +152,17 @@ def save_deduction(emp_id: int, month: int, year: int, advance_deduction: float,
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    month_name = calendar.month_name[month]
-    if emp.email:
-        try:
-            send_payslip_email(emp.email, emp.employee_name, month_name, year, data["gross_salary"], data["total_deduction"], data["net_salary"])
-        except Exception as e:
-            print(f"[payslip] email failed: {e}")
-    if emp.phone_no:
-        try:
-            send_payslip_whatsapp(emp.phone_no, emp.employee_name, month_name, year, data["net_salary"])
-        except Exception as e:
-            print(f"[payslip] whatsapp failed: {e}")
-
-    return rec
+    notif = {
+        'email': emp.email,
+        'phone': emp.phone_no,
+        'name': emp.employee_name,
+        'month_name': calendar.month_name[month],
+        'year': year,
+        'gross': data['gross_salary'],
+        'deduction': data['total_deduction'],
+        'net': data['net_salary'],
+    }
+    return rec, notif
 
 
 def get_deduction(emp_id: int, month: int, year: int, db: Session) -> Optional[SalaryDB]:
@@ -149,15 +174,13 @@ def get_deduction(emp_id: int, month: int, year: int, db: Session) -> Optional[S
 
 
 def get_all_deductions(month: int, year: int, db: Session) -> List[dict]:
-    recs = db.query(SalaryDB).filter(
-        SalaryDB.month == month,
-        SalaryDB.year == year
-    ).all()
+    rows = db.query(SalaryDB, EmpDB.employee_name).join(
+        EmpDB, SalaryDB.employee_id == EmpDB.employee_id
+    ).filter(SalaryDB.month == month, SalaryDB.year == year).all()
     out = []
-    for rec in recs:
-        emp = db.query(EmpDB).filter(EmpDB.employee_id == rec.employee_id).first()
+    for rec, name in rows:
         d = {c.name: getattr(rec, c.name) for c in rec.__table__.columns}
-        d['employee_name'] = emp.employee_name if emp else ''
+        d['employee_name'] = name
         out.append(d)
     return out
 

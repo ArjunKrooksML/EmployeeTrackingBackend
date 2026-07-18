@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, BackgroundTasks, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -6,6 +6,8 @@ from database.connection import get_db
 from models.leaves import LeaveCreate, LeaveResponse, LeaveUpdateStatus, AdminLeaveResponse
 from models.pagination import PaginatedResponse
 from services.leaves import request_leave, get_employee_leaves, get_all_leaves, update_leave_status, cancel_leave
+from services.email import send_leave_status_email
+from services.whatsapp import send_leave_status_whatsapp
 from middleware.rbac import require_hr_or_gm
 from middleware.auth import get_current_employee
 from database.models import Employee as EmpDB
@@ -36,8 +38,13 @@ def fetch_all_leaves(
 
 
 @router.put("/{leave_id}/status", response_model=LeaveResponse, dependencies=[Depends(require_hr_or_gm)])
-def change_leave_status(leave_id: int, update_data: LeaveUpdateStatus, db: Session = Depends(get_db)):
-    return update_leave_status(leave_id, update_data.status, db)
+def change_leave_status(leave_id: int, update_data: LeaveUpdateStatus, bg: BackgroundTasks, db: Session = Depends(get_db)):
+    leave, notif = update_leave_status(leave_id, update_data.status, db)
+    if notif:
+        bg.add_task(send_leave_status_email, notif['email'], notif['name'], notif['status'], notif['leave_date'], notif['leave_type'], notif['day_type'], notif['reason'])
+        if notif['phone']:
+            bg.add_task(send_leave_status_whatsapp, notif['phone'], notif['name'], notif['status'], notif['leave_date'], notif['leave_type'], notif['reason'])
+    return leave
 
 
 @router.delete("/{leave_id}")
