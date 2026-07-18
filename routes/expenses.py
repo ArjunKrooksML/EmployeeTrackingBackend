@@ -49,4 +49,4 @@ async def create_expense(
             raise HTTPException(400, "Total attachment size exceeds 25 MB")
         file_data.append((f.filename, data, f.content_type or 'application/octet-stream'))
 
-    return svc.create(emp.employee_id, title, d, items_list, file_data, dt, db)
+    return await svc.create(emp.employee_id, title, d, items_list, file_data, dt, db)

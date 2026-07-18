@@ -1,4 +1,4 @@
-import uuid, json
+import uuid, json, asyncio
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from database.models import Expense, Employee
@@ -43,13 +43,14 @@ def _get_name(employee_id: int, db: Session) -> Optional[str]:
     return emp.employee_name if emp else None
 
 
-def create(employee_id: int, title: str, d: date, items: list,
-           file_data: List[tuple], date_to: Optional[date], db: Session) -> dict:
-    atts = []
-    for filename, data, content_type in file_data:
+async def create(employee_id: int, title: str, d: date, items: list,
+                  file_data: List[tuple], date_to: Optional[date], db: Session) -> dict:
+    async def _upload(filename: str, data: bytes, content_type: str) -> dict:
         path = f"expenses/{employee_id}/{uuid.uuid4().hex}_{filename}"
-        storage.upload(path, data, content_type)
-        atts.append({"path": path, "name": filename})
+        await asyncio.to_thread(storage.upload, path, data, content_type)
+        return {"path": path, "name": filename}
+
+    atts = list(await asyncio.gather(*(_upload(fn, data, ct) for fn, data, ct in file_data))) if file_data else []
     att_json = json.dumps(atts) if atts else None
     exp = Expense(employee_id=employee_id, title=title, date=d, date_to=date_to,
                   items=items, attachment_path=att_json, attachment_name=None)
@@ -87,13 +88,15 @@ def get_one(expense_id: int, db: Session) -> dict:
     return _fmt(e, _get_name(e.employee_id, db))
 
 
-def mark_paid(expense_id: int, db: Session) -> dict:
+def mark_paid(expense_id: int, remarks: Optional[str], db: Session) -> dict:
     e = db.query(Expense).filter(Expense.id == expense_id).first()
     if not e:
         raise HTTPException(404, "Not found")
     if e.status != 'approved':
         raise HTTPException(400, "Only approved expenses can be marked as paid")
     e.paid = True
+    if remarks:
+        e.remarks = remarks
     db.commit()
     db.refresh(e)
     return _fmt(e, _get_name(e.employee_id, db))
@@ -106,7 +109,8 @@ def review(expense_id: int, status: str, remarks: Optional[str], db: Session) ->
     if not e:
         raise HTTPException(404, "Not found")
     e.status = status
-    e.remarks = remarks
+    if remarks:
+        e.remarks = remarks
     db.commit()
     db.refresh(e)
     return _fmt(e, _get_name(e.employee_id, db))
