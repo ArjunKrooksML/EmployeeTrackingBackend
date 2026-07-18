@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import Employee as EmpDB
 from middleware.auth import get_current_employee
+from models.expenses import PaymentReq
 from services import expenses as svc
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
@@ -50,3 +51,62 @@ async def create_expense(
         file_data.append((f.filename, data, f.content_type or 'application/octet-stream'))
 
     return await svc.create(emp.employee_id, title, d, items_list, file_data, dt, db)
+
+
+@router.put("/{expense_id}")
+async def update_expense(
+    expense_id: int,
+    title: Optional[str] = Form(None),
+    date: Optional[str] = Form(None),
+    date_to: Optional[str] = Form(None),
+    clear_date_to: bool = Form(False),
+    items: Optional[str] = Form(None),
+    files: List[UploadFile] = File(default=[]),
+    emp: EmpDB = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    items_list = None
+    if items is not None:
+        try:
+            items_list = json.loads(items)
+        except Exception:
+            raise HTTPException(400, "Invalid items JSON")
+    d = None
+    if date is not None:
+        try:
+            d = datetime.date.fromisoformat(date)
+        except Exception:
+            raise HTTPException(400, "Invalid date")
+    dt = datetime.date.fromisoformat(date_to) if date_to else None
+
+    file_data = []
+    total_bytes = 0
+    for f in files:
+        if not f.filename:
+            continue
+        data = await f.read()
+        total_bytes += len(data)
+        if total_bytes > MAX_BYTES:
+            raise HTTPException(400, "Total attachment size exceeds 25 MB")
+        file_data.append((f.filename, data, f.content_type or 'application/octet-stream'))
+
+    return await svc.update_expense(expense_id, emp.employee_id, title, d, items_list, dt, clear_date_to, file_data, db)
+
+
+@router.put("/{expense_id}/payment")
+def record_payment(
+    expense_id: int,
+    data: PaymentReq,
+    emp: EmpDB = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    return svc.record_payment(expense_id, data.amount, data.remarks, db, employee_id=emp.employee_id)
+
+
+@router.delete("/{expense_id}")
+def delete_expense(
+    expense_id: int,
+    emp: EmpDB = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    return svc.delete_expense(expense_id, emp.employee_id, db)

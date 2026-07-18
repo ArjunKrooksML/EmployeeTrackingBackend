@@ -9,7 +9,15 @@ from models.employees import EmployeeLogin, EmployeePublic
 from services.otp import gen_otp, verify_otp
 from services.email import send_otp_email
 from services.whatsapp import send_otp_whatsapp
+import services.storage as storage
 import config
+
+
+def _emp_public(emp: EmpDB) -> EmployeePublic:
+    pub = EmployeePublic.model_validate(emp)
+    if emp.profile_pic_path:
+        pub.profile_pic_url = storage.signed_url(emp.profile_pic_path)
+    return pub
 
 
 def _save_refresh(token: str, user_type: str, user_id: int, db: Session):
@@ -33,7 +41,7 @@ def auth_emp(creds: EmployeeLogin, db: Session) -> dict:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     access, refresh = create_tokens({"employee_id": emp.employee_id, "email": emp.email, "type": "employee"})
     _save_refresh(refresh, "employee", emp.employee_id, db)
-    return {"access_token": access, "refresh_token": refresh, "user": EmployeePublic.model_validate(emp)}
+    return {"access_token": access, "refresh_token": refresh, "user": _emp_public(emp)}
 
 
 def refresh_tok(refresh_token: str, db: Session) -> dict:
@@ -63,7 +71,7 @@ def refresh_tok(refresh_token: str, db: Session) -> dict:
         data = {"employee_id": emp.employee_id, "email": emp.email, "type": "employee"}
         access, refresh = create_tokens(data)
         _save_refresh(refresh, "employee", emp.employee_id, db)
-        return {"access_token": access, "refresh_token": refresh, "user": EmployeePublic.model_validate(emp)}
+        return {"access_token": access, "refresh_token": refresh, "user": _emp_public(emp)}
     raise HTTPException(status_code=401, detail="Invalid token type")
 
 

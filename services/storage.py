@@ -20,6 +20,9 @@ def _s3():
 def upload(path: str, data: bytes, content_type: str = 'application/octet-stream'):
     _s3().put_object(Bucket=config.SUPABASE_S3_BUCKET, Key=path, Body=data, ContentType=content_type)
 
+def download(path: str) -> bytes:
+    return _s3().get_object(Bucket=config.SUPABASE_S3_BUCKET, Key=path)['Body'].read()
+
 def signed_url(path: str, expires: int = 3600) -> str:
     return _s3().generate_presigned_url(
         'get_object',

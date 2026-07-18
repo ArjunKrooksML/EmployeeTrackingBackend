@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from database.connection import get_db
 from middleware.auth import get_current_admin
-from models.expenses import ExpenseReview, MarkPaidReq
+from models.expenses import ExpenseReview, PaymentReq, MarkPaidReq
 from services import expenses as svc
 
 router = APIRouter(prefix="/admin/expenses", tags=["admin-expenses"])
@@ -36,6 +36,16 @@ def review_expense(
     _=Depends(get_current_admin),
 ):
     return svc.review(expense_id, data.status, data.remarks, db)
+
+
+@router.put("/{expense_id}/payment")
+def record_payment(
+    expense_id: int,
+    data: PaymentReq,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_admin),
+):
+    return svc.record_payment(expense_id, data.amount, data.remarks, db)
 
 
 @router.put("/{expense_id}/paid")

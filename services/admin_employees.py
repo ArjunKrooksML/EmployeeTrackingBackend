@@ -6,7 +6,14 @@ from fastapi import HTTPException
 from models.employees import EmployeeCreate, EmployeeUpdate, EmployeeImport
 from database.models import Employee as EmployeeDB
 from middleware.helpers import hash_pwd
+import services.storage as storage
 import secrets
+
+
+def _with_pic(emp: EmployeeDB) -> EmployeeDB:
+    if emp and emp.profile_pic_path:
+        emp.profile_pic_url = storage.signed_url(emp.profile_pic_path)
+    return emp
 
 
 def norm_id_type(id_type: str) -> str:
@@ -79,11 +86,11 @@ def get_all(db: Session, skip: int = 0, limit: int = 20, page: int = 1, page_siz
     total = db.query(EmployeeDB).count()
     items = db.query(EmployeeDB).order_by(EmployeeDB.created_at.desc()).offset(skip).limit(limit).all()
     pages = (total + page_size - 1) // page_size if page_size else 1
-    return {"items": items, "total": total, "page": page, "page_size": page_size, "pages": pages}
+    return {"items": [_with_pic(e) for e in items], "total": total, "page": page, "page_size": page_size, "pages": pages}
 
 
 def get_by_id(emp_id: int, db: Session) -> Optional[EmployeeDB]:
-    return db.query(EmployeeDB).filter(EmployeeDB.employee_id == emp_id).first()
+    return _with_pic(db.query(EmployeeDB).filter(EmployeeDB.employee_id == emp_id).first())
 
 
 def update_emp(emp_id: int, data: EmployeeUpdate, db: Session) -> Optional[EmployeeDB]:

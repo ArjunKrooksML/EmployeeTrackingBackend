@@ -208,6 +208,7 @@ class EmployeeResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     generated_password: Optional[str] = None
+    profile_pic_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -233,6 +234,7 @@ class EmployeePublic(BaseModel):
     hra: int = 0
     others: int = 0
     role: str = 'employee'
+    profile_pic_url: Optional[str] = None
 
     class Config:
         from_attributes = True

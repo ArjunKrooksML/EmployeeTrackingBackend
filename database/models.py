@@ -23,6 +23,7 @@ class Employee(Base):
     others = Column(Integer, nullable=False, default=0)
     # role: employee | senior | hr | gm
     role = Column(String(20), nullable=False, server_default='employee')
+    profile_pic_path = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -193,6 +194,7 @@ class Expense(Base):
     attachment_name = Column(String(255), nullable=True)
     status = Column(String(50), nullable=False, default='pending')
     paid = Column(Boolean, nullable=False, default=False)
+    paid_amount = Column(Integer, nullable=False, default=0)
     remarks = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
