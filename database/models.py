@@ -192,6 +192,7 @@ class Expense(Base):
     attachment_path = Column(Text, nullable=True)
     attachment_name = Column(String(255), nullable=True)
     status = Column(String(50), nullable=False, default='pending')
+    paid = Column(Boolean, nullable=False, default=False)
     remarks = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

@@ -36,3 +36,8 @@ def review_expense(
     _=Depends(get_current_admin),
 ):
     return svc.review(expense_id, data.status, data.remarks, db)
+
+
+@router.put("/{expense_id}/paid")
+def mark_paid(expense_id: int, db: Session = Depends(get_db), _=Depends(get_current_admin)):
+    return svc.mark_paid(expense_id, db)

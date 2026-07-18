@@ -32,6 +32,7 @@ def _fmt(e: Expense, emp_name: Optional[str]) -> dict:
         "items": e.items if isinstance(e.items, list) else [],
         "attachments": [{"url": storage.signed_url(a["path"]), "name": a["name"]} for a in atts],
         "status": e.status,
+        "paid": e.paid,
         "remarks": e.remarks,
         "created_at": e.created_at.isoformat() if e.created_at else None,
     }
@@ -83,6 +84,18 @@ def get_one(expense_id: int, db: Session) -> dict:
     e = db.query(Expense).filter(Expense.id == expense_id).first()
     if not e:
         raise HTTPException(404, "Not found")
+    return _fmt(e, _get_name(e.employee_id, db))
+
+
+def mark_paid(expense_id: int, db: Session) -> dict:
+    e = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not e:
+        raise HTTPException(404, "Not found")
+    if e.status != 'approved':
+        raise HTTPException(400, "Only approved expenses can be marked as paid")
+    e.paid = True
+    db.commit()
+    db.refresh(e)
     return _fmt(e, _get_name(e.employee_id, db))
 
 
