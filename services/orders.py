@@ -15,6 +15,7 @@ def _po_dict(po: PurchaseOrder, db: Session) -> dict:
         "po_number": po.po_number,
         "project_id": po.project_id,
         "project_name": proj.name if proj else None,
+        "date": po.date,
         "created_at": po.created_at,
         "items": [{"id": i.id, "size": i.size, "quantity": i.quantity} for i in items],
     }
@@ -30,6 +31,7 @@ def _so_dict(so: SupplyOrder, db: Session) -> dict:
         "po_number": po.po_number if po else "",
         "invoice_number": so.invoice_number,
         "project_name": proj.name if proj else None,
+        "date": so.date,
         "created_at": so.created_at,
         "items": [{"id": i.id, "size": i.size, "supplied_qty": i.supplied_qty, "balance_qty": i.balance_qty} for i in items],
     }
@@ -42,7 +44,7 @@ def create_po(data: POCreate, db: Session) -> dict:
         raise HTTPException(400, "PO number already exists")
     if not data.items:
         raise HTTPException(400, "At least one size/quantity is required")
-    po = PurchaseOrder(po_number=data.po_number.strip(), project_id=data.project_id)
+    po = PurchaseOrder(po_number=data.po_number.strip(), project_id=data.project_id, date=data.date)
     db.add(po)
     db.flush()
     for item in data.items:
@@ -67,6 +69,7 @@ def list_pos(db: Session) -> List[dict]:
         "po_number": po.po_number,
         "project_id": po.project_id,
         "project_name": proj_map.get(po.project_id),
+        "date": po.date,
         "created_at": po.created_at,
         "items": [{"id": i.id, "size": i.size, "quantity": i.quantity} for i in items_map.get(po.id, [])],
     } for po in pos]
@@ -125,6 +128,7 @@ def update_po(po_id: int, data: POCreate, db: Session) -> dict:
         raise HTTPException(400, "At least one size/quantity is required")
     po.po_number = data.po_number.strip()
     po.project_id = data.project_id
+    po.date = data.date
     db.query(POItem).filter(POItem.po_id == po_id).delete()
     for item in data.items:
         db.add(POItem(po_id=po.id, size=item.size, quantity=item.quantity))
@@ -163,6 +167,7 @@ def list_sos(db: Session) -> List[dict]:
             "po_number": po.po_number if po else "",
             "invoice_number": so.invoice_number,
             "project_name": proj_map.get(po.project_id) if po and po.project_id else None,
+            "date": so.date,
             "created_at": so.created_at,
             "items": [{"id": i.id, "size": i.size, "supplied_qty": i.supplied_qty, "balance_qty": i.balance_qty} for i in items_map.get(so.id, [])],
         })
@@ -174,7 +179,7 @@ def create_so(data: SOCreate, db: Session) -> dict:
         raise HTTPException(404, "PO not found")
     if not data.items:
         raise HTTPException(400, "At least one item is required")
-    so = SupplyOrder(po_id=data.po_id, invoice_number=data.invoice_number or None)
+    so = SupplyOrder(po_id=data.po_id, invoice_number=data.invoice_number or None, date=data.date)
     db.add(so)
     db.flush()
     for item in data.items:
@@ -191,6 +196,7 @@ def update_so(so_id: int, data: SOCreate, db: Session) -> dict:
     if not data.items:
         raise HTTPException(400, "At least one item is required")
     so.invoice_number = data.invoice_number or None
+    so.date = data.date
     db.query(SOItem).filter(SOItem.so_id == so_id).delete()
     for item in data.items:
         db.add(SOItem(so_id=so.id, size=item.size, supplied_qty=item.supplied_qty, balance_qty=item.balance_qty))

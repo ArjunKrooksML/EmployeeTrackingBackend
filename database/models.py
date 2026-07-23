@@ -105,6 +105,7 @@ class PurchaseOrder(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     po_number = Column(String(100), nullable=False, unique=True)
     project_id = Column(Integer, ForeignKey("projects.project_id", ondelete="SET NULL"), nullable=True)
+    date = Column(Date, nullable=False, server_default=func.current_date())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -123,6 +124,7 @@ class SupplyOrder(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     po_id = Column(Integer, ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False)
     invoice_number = Column(String(50), nullable=True)
+    date = Column(Date, nullable=False, server_default=func.current_date())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -174,8 +176,34 @@ class DPR(Base):
     mm16 = Column(Integer, nullable=True, default=0)
     mm20 = Column(Integer, nullable=True, default=0)
     mm25 = Column(Integer, nullable=True, default=0)
+    mm28 = Column(Integer, nullable=True, default=0)
     mm32 = Column(Integer, nullable=True, default=0)
+    mm40 = Column(Integer, nullable=True, default=0)
     operator_name = Column(String(150), nullable=True, default='')
+    description = Column(Text, nullable=True, default='')
+    uploaded_by = Column(String(150), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class FactoryDPR(Base):
+    __tablename__ = "factory_dpr"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(Date, nullable=False)
+    mm16 = Column(Integer, nullable=True, default=0)
+    mm20 = Column(Integer, nullable=True, default=0)
+    mm25 = Column(Integer, nullable=True, default=0)
+    mm28 = Column(Integer, nullable=True, default=0)
+    mm32 = Column(Integer, nullable=True, default=0)
+    mm40 = Column(Integer, nullable=True, default=0)
+    r20_16 = Column(Integer, nullable=True, default=0)
+    r25_16 = Column(Integer, nullable=True, default=0)
+    r25_20 = Column(Integer, nullable=True, default=0)
+    r32_20 = Column(Integer, nullable=True, default=0)
+    r32_16 = Column(Integer, nullable=True, default=0)
+    r32_25 = Column(Integer, nullable=True, default=0)
+    r40_25 = Column(Integer, nullable=True, default=0)
+    r40_32 = Column(Integer, nullable=True, default=0)
     description = Column(Text, nullable=True, default='')
     uploaded_by = Column(String(150), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

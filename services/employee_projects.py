@@ -9,7 +9,7 @@ from models.projects import ProjectCreate, ProjectUpdate
 def list_all_projects(db: Session) -> List[ProjectDB]:
     """List all projects (employees can view all projects)"""
     try:
-        return db.query(ProjectDB).order_by(ProjectDB.project_id.desc()).all()
+        return db.query(ProjectDB).order_by(ProjectDB.name).all()
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Error fetching projects: {str(e)}")
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -11,6 +11,7 @@ class POItemCreate(BaseModel):
 class POCreate(BaseModel):
     po_number: str
     project_id: Optional[int] = None
+    date: date
     items: List[POItemCreate]
 
 
@@ -28,6 +29,7 @@ class POResponse(BaseModel):
     po_number: str
     project_id: Optional[int] = None
     project_name: Optional[str] = None
+    date: date
     created_at: datetime
     items: List[POItemResponse]
 
@@ -44,6 +46,7 @@ class SOItemCreate(BaseModel):
 class SOCreate(BaseModel):
     po_id: int
     invoice_number: Optional[str] = None
+    date: date
     items: List[SOItemCreate]
 
 
@@ -63,6 +66,7 @@ class SOResponse(BaseModel):
     po_number: str
     invoice_number: Optional[str] = None
     project_name: Optional[str] = None
+    date: date
     created_at: datetime
     items: List[SOItemResponse]
 

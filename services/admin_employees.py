@@ -84,7 +84,7 @@ def add_emp(data: EmployeeCreate, db: Session) -> EmployeeDB:
 
 def get_all(db: Session, skip: int = 0, limit: int = 20, page: int = 1, page_size: int = 20) -> dict:
     total = db.query(EmployeeDB).count()
-    items = db.query(EmployeeDB).order_by(EmployeeDB.created_at.desc()).offset(skip).limit(limit).all()
+    items = db.query(EmployeeDB).order_by(EmployeeDB.employee_name).offset(skip).limit(limit).all()
     pages = (total + page_size - 1) // page_size if page_size else 1
     return {"items": [_with_pic(e) for e in items], "total": total, "page": page, "page_size": page_size, "pages": pages}
 
