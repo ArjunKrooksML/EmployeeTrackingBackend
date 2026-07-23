@@ -3,17 +3,13 @@ from datetime import date
 from typing import List, Optional, Tuple
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from database.models import Employee as EmpDB, Attendance as AttDB, Leave as LeaveDB, SalaryDeduction as SalaryDB
+from database.models import Employee as EmpDB, Attendance as AttDB, SalaryDeduction as SalaryDB
 
 
-def _calc(emp: EmpDB, month: int, year: int, advance_deduction: float,
-          att_records: list, emergency_dates: set) -> dict:
+def _calc(emp: EmpDB, month: int, year: int, advance_deduction: float, att_records: list) -> dict:
     lates = sum(1 for a in att_records if a.attendance == 'late')
     half_day_absents = sum(1 for a in att_records if a.attendance == 'absent' and a.checkin is not None)
-    full_absents = sum(
-        1 for a in att_records
-        if a.attendance == 'absent' and a.checkin is None and str(a.date) not in emergency_dates
-    )
+    full_absents = sum(1 for a in att_records if a.attendance == 'absent' and a.checkin is None)
 
     absents_from_lates = lates // 3
     total_deductible = full_absents + (half_day_absents * 0.5) + absents_from_lates
@@ -59,16 +55,7 @@ def _compute(emp: EmpDB, month: int, year: int, advance_deduction: float, db: Se
         AttDB.date >= from_date,
         AttDB.date <= to_date
     ).all()
-    emergency = {
-        str(l.leave_date) for l in db.query(LeaveDB).filter(
-            LeaveDB.employee_id == emp.employee_id,
-            LeaveDB.leave_date >= from_date,
-            LeaveDB.leave_date <= to_date,
-            LeaveDB.status == 'approved',
-            LeaveDB.leave_type == 'emergency'
-        ).all()
-    }
-    return _calc(emp, month, year, advance_deduction, att, emergency)
+    return _calc(emp, month, year, advance_deduction, att)
 
 
 def compute_one(emp_id: int, month: int, year: int, advance_deduction: float, db: Session) -> dict:
@@ -104,22 +91,11 @@ def compute_all(month: int, year: int, db: Session) -> List[dict]:
     ).all():
         att_by_emp.setdefault(a.employee_id, []).append(a)
 
-    leaves_by_emp: dict = {}
-    for l in db.query(LeaveDB).filter(
-        LeaveDB.employee_id.in_(emp_ids),
-        LeaveDB.leave_date >= from_date,
-        LeaveDB.leave_date <= to_date,
-        LeaveDB.status == 'approved',
-        LeaveDB.leave_type == 'emergency'
-    ).all():
-        leaves_by_emp.setdefault(l.employee_id, set()).add(str(l.leave_date))
-
     return [
         _calc(
             emp, month, year,
             advances.get(emp.employee_id, 0.0),
             att_by_emp.get(emp.employee_id, []),
-            leaves_by_emp.get(emp.employee_id, set()),
         )
         for emp in emps
     ]
