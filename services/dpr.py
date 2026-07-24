@@ -53,6 +53,15 @@ def update_dpr(entry_id: int, d: date, mm16: int, mm20: int, mm25: int, mm28: in
     return entry
 
 
+def delete_dpr(entry_id: int, db: Session):
+    entry = db.query(DPR).filter(DPR.id == entry_id).first()
+    if not entry:
+        raise HTTPException(404, "DPR entry not found")
+    db.delete(entry)
+    db.commit()
+    return {"message": "DPR entry deleted"}
+
+
 def get_factory_dprs(db: Session, skip: int = 0, limit: int = 20,
                       month: Optional[int] = None, year: Optional[int] = None):
     q = db.query(FactoryDPR).order_by(FactoryDPR.date.desc())
@@ -79,3 +88,12 @@ def update_factory_dpr(entry_id: int, data: dict, db: Session):
     db.commit()
     db.refresh(entry)
     return entry
+
+
+def delete_factory_dpr(entry_id: int, db: Session):
+    entry = db.query(FactoryDPR).filter(FactoryDPR.id == entry_id).first()
+    if not entry:
+        raise HTTPException(404, "Factory DPR entry not found")
+    db.delete(entry)
+    db.commit()
+    return {"message": "Factory DPR entry deleted"}

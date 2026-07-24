@@ -44,6 +44,11 @@ def update_factory_dpr(entry_id: int, data: FactoryDPRUpdate, db: Session = Depe
     return svc.update_factory_dpr(entry_id, data.model_dump(), db)
 
 
+@router.delete("/factory/{entry_id}")
+def delete_factory_dpr(entry_id: int, db: Session = Depends(get_db), _=Depends(require_any_user)):
+    return svc.delete_factory_dpr(entry_id, db)
+
+
 @router.get("/{project_id}", response_model=PaginatedResponse[DPRResp])
 def get_dprs(
     project_id: int,
@@ -72,3 +77,8 @@ def update_dpr(entry_id: int, data: DPRUpdate,
                db: Session = Depends(get_db), _=Depends(require_any_user)):
     return svc.update_dpr(entry_id, data.date, data.mm16, data.mm20, data.mm25, data.mm28,
                           data.mm32, data.mm40, data.operator_name, data.description, db)
+
+
+@router.delete("/{entry_id}")
+def delete_dpr(entry_id: int, db: Session = Depends(get_db), _=Depends(require_any_user)):
+    return svc.delete_dpr(entry_id, db)

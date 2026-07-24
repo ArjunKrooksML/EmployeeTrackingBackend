@@ -209,6 +209,47 @@ class FactoryDPR(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class Vendor(Base):
+    __tablename__ = "vendors"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(150), nullable=False, unique=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Chaser(Base):
+    __tablename__ = "chasers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(Date, nullable=False)
+    entry_type = Column(String(10), nullable=False, server_default='issue')
+    vendor = Column(String(150), nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.project_id", ondelete="SET NULL"), nullable=True)
+    size_2_5 = Column(Integer, nullable=True, default=0)
+    size_3 = Column(Integer, nullable=True, default=0)
+    size_3_5 = Column(Integer, nullable=True, default=0)
+    size_4 = Column(Integer, nullable=True, default=0)
+    description = Column(Text, nullable=True, default='')
+    uploaded_by = Column(String(150), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class RawMaterialProcurement(Base):
+    __tablename__ = "raw_material_procurements"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(Date, nullable=False)
+    bill_no = Column(String(100), nullable=False)
+    vendor_id = Column(Integer, ForeignKey("vendors.id", ondelete="SET NULL"), nullable=True)
+    heat_no = Column(String(100), nullable=True)
+    tc_no = Column(String(100), nullable=True)
+    lot_no = Column(String(100), nullable=True)
+    test_report_no = Column(String(100), nullable=True)
+    items = Column(JSON, nullable=False)
+    uploaded_by = Column(String(150), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class Expense(Base):
     __tablename__ = "expenses"
 
