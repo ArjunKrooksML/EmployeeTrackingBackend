@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from database.connection import get_db
 from middleware.auth import get_current_admin
+from middleware.rbac import require_hr_or_gm
 from models.expenses import ExpenseReview, PaymentReq, MarkPaidReq
 from services import expenses as svc
 
@@ -15,7 +16,7 @@ def list_expenses(
     page_size: int = Query(20, ge=1, le=200),
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    _=Depends(get_current_admin),
+    _=Depends(require_hr_or_gm),
 ):
     skip = (page - 1) * page_size
     total, items = svc.all_expenses(db, skip=skip, limit=page_size, status=status)
@@ -24,7 +25,7 @@ def list_expenses(
 
 
 @router.get("/{expense_id}")
-def get_expense(expense_id: int, db: Session = Depends(get_db), _=Depends(get_current_admin)):
+def get_expense(expense_id: int, db: Session = Depends(get_db), _=Depends(require_hr_or_gm)):
     return svc.get_one(expense_id, db)
 
 
