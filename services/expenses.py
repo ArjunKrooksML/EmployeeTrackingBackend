@@ -1,8 +1,9 @@
 import uuid, json, asyncio
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from database.models import Expense, Employee
+from database.models import Expense, Employee, Admin
 import services.storage as storage
+from services.email import send_expense_uploaded_email
 from datetime import date
 from typing import Optional, List
 
@@ -60,6 +61,21 @@ async def _upload_files(employee_id: int, file_data: List[tuple]) -> list:
     return list(await asyncio.gather(*(_upload(fn, data, ct) for fn, data, ct in file_data))) if file_data else []
 
 
+def _notify_admins(exp: Expense, emp_name: Optional[str], db: Session):
+    admins = db.query(Admin).all()
+    if not admins:
+        return
+    date_str = exp.date.strftime('%d %b %Y') if exp.date else ''
+    if exp.date_to:
+        date_str += f" → {exp.date_to.strftime('%d %b %Y')}"
+    items = exp.items if isinstance(exp.items, list) else []
+    for admin in admins:
+        try:
+            send_expense_uploaded_email(admin.email, admin.name, emp_name or f"Employee #{exp.employee_id}", exp.title, date_str, items, _total(exp))
+        except Exception as e:
+            print(f"[email] Failed to send expense notification to {admin.email}: {e}")
+
+
 async def create(employee_id: int, title: str, d: date, items: list,
                   file_data: List[tuple], date_to: Optional[date], db: Session) -> dict:
     atts = await _upload_files(employee_id, file_data)
@@ -69,7 +85,9 @@ async def create(employee_id: int, title: str, d: date, items: list,
     db.add(exp)
     db.commit()
     db.refresh(exp)
-    return _fmt(exp, _get_name(employee_id, db))
+    emp_name = _get_name(employee_id, db)
+    _notify_admins(exp, emp_name, db)
+    return _fmt(exp, emp_name)
 
 
 async def update_expense(expense_id: int, employee_id: int, title: Optional[str], d: Optional[date],

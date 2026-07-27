@@ -30,6 +30,7 @@ RESEND_API_KEY = os.getenv("RESEND_API", "")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 LOGO_URL = os.getenv("IMAGE", "")
 PORTAL_URL = os.getenv("PORTAL_URL", "")
+ADMIN_PORTAL_URL = os.getenv("ADMIN_PORTAL_URL", "")
 
 # Twilio WhatsApp
 TWILIO_SID = os.getenv("TWILIO_SID", "")

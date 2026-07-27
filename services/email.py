@@ -153,6 +153,41 @@ def send_payslip_email(to: str, emp_name: str, month_name: str, year: int, gross
     _send(to=to, subject=f"Payslip Ready – {month_name} {year}", html=_wrap(body))
 
 
+def send_expense_uploaded_email(to: str, admin_name: str, emp_name: str, title: str, date_str: str, items: list, total: float):
+    items_rows = "".join(
+        f"""<tr{' style="background:#f9fafb;"' if i % 2 else ''}>
+            <td style="padding:8px 14px;color:#111827;font-size:13px;">{it.get('description', '')}</td>
+            <td style="padding:8px 14px;color:#111827;font-size:13px;text-align:right;">&#8377;{float(it.get('amount', 0)):,.2f}</td>
+        </tr>"""
+        for i, it in enumerate(items)
+    )
+    body = f"""
+        <p style="margin:0 0 20px;color:#374151;font-size:14px;">Hi <strong>{admin_name}</strong>,</p>
+        <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+            <strong>{emp_name}</strong> has filed a new expense statement on the SVAAS portal.
+        </p>
+        <div style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:20px;">
+            <div style="background:#4f46e5;padding:14px 18px;">
+                <span style="color:#ffffff;font-size:15px;font-weight:600;">{title}</span>
+                <span style="color:#c7d2fe;font-size:12px;display:block;margin-top:2px;">{date_str}</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;">
+                <tbody>
+                    {items_rows}
+                    <tr style="background:#f5f3ff;">
+                        <td style="padding:10px 14px;color:#4338ca;font-size:13px;font-weight:700;">Total</td>
+                        <td style="padding:10px 14px;color:#4338ca;font-size:13px;font-weight:700;text-align:right;">&#8377;{total:,.2f}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <a href="{config.ADMIN_PORTAL_URL}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;">
+            View Expense on Portal
+        </a>
+    """
+    _send(to=to, subject=f"New Expense Filed: {title} ({emp_name})", html=_wrap(body))
+
+
 def send_task_assigned_email(
     to: str, emp_name: str, task_name: str,
     description: str | None, deadline: str | None
