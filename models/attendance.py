@@ -40,3 +40,4 @@ class AttResp(BaseModel):
 
 class AttWithEmp(AttResp):
     employee_name: str
+    profile_pic_url: Optional[str] = None

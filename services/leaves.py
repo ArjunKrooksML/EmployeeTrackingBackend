@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from database.models import Leave as LeaveDB, Employee as EmployeeDB, Attendance as AttendanceDB, Admin as AdminDB
 from models.leaves import LeaveCreate
 from services.email import send_leave_applied_email
+import services.storage as storage
 from typing import List, Optional, Tuple
 
 
@@ -74,7 +75,7 @@ def get_all_leaves(
     page_size: int = 20,
     status: Optional[str] = None,
 ) -> dict:
-    q = db.query(LeaveDB, EmployeeDB.employee_name).join(
+    q = db.query(LeaveDB, EmployeeDB.employee_name, EmployeeDB.profile_pic_path).join(
         EmployeeDB, LeaveDB.employee_id == EmployeeDB.employee_id
     )
     if status:
@@ -82,9 +83,10 @@ def get_all_leaves(
     total = q.count()
     rows = q.order_by(LeaveDB.created_at.desc()).offset(skip).limit(limit).all()
     items = []
-    for leave, emp_name in rows:
+    for leave, emp_name, pic_path in rows:
         d = leave.__dict__.copy()
         d['employee_name'] = emp_name
+        d['profile_pic_url'] = storage.signed_url(pic_path) if pic_path else None
         items.append(d)
     pages = (total + page_size - 1) // page_size if page_size else 1
     return {"items": items, "total": total, "page": page, "page_size": page_size, "pages": pages}

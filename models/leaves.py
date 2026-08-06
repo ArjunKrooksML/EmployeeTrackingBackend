@@ -27,3 +27,4 @@ class LeaveResponse(BaseModel):
 
 class AdminLeaveResponse(LeaveResponse):
     employee_name: str
+    profile_pic_url: Optional[str] = None
