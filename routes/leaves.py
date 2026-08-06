@@ -9,7 +9,7 @@ from services.leaves import request_leave, get_employee_leaves, get_all_leaves, 
 from services.email import send_leave_status_email
 from services.whatsapp import send_leave_status_whatsapp
 from middleware.rbac import require_hr_or_gm
-from middleware.auth import get_current_employee
+from middleware.auth import get_current_employee, get_current_admin
 from database.models import Employee as EmpDB
 
 router = APIRouter(prefix="/leaves", tags=["Leaves"])
@@ -37,7 +37,7 @@ def fetch_all_leaves(
     return get_all_leaves(db, skip=skip, limit=page_size, page=page, page_size=page_size, status=status)
 
 
-@router.put("/{leave_id}/status", response_model=LeaveResponse, dependencies=[Depends(require_hr_or_gm)])
+@router.put("/{leave_id}/status", response_model=LeaveResponse, dependencies=[Depends(get_current_admin)])
 def change_leave_status(leave_id: int, update_data: LeaveUpdateStatus, bg: BackgroundTasks, db: Session = Depends(get_db)):
     leave, notif = update_leave_status(leave_id, update_data.status, db)
     if notif:

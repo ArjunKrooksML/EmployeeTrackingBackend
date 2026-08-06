@@ -1,9 +1,19 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 from fastapi import HTTPException
-from database.models import Leave as LeaveDB, Employee as EmployeeDB, Attendance as AttendanceDB
+from database.models import Leave as LeaveDB, Employee as EmployeeDB, Attendance as AttendanceDB, Admin as AdminDB
 from models.leaves import LeaveCreate
+from services.email import send_leave_applied_email
 from typing import List, Optional, Tuple
+
+
+def _notify_admins(leave: LeaveDB, emp_name: str, db: Session):
+    admins = db.query(AdminDB).all()
+    for admin in admins:
+        try:
+            send_leave_applied_email(admin.email, admin.name, emp_name, leave.leave_type, str(leave.leave_date), leave.day_type, leave.reason)
+        except Exception as e:
+            print(f"[email] Failed to send leave notification to {admin.email}: {e}")
 
 
 def request_leave(data: LeaveCreate, db: Session) -> LeaveDB:
@@ -43,10 +53,13 @@ def request_leave(data: LeaveCreate, db: Session) -> LeaveDB:
         db.add(new_leave)
         db.commit()
         db.refresh(new_leave)
-        return new_leave
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    emp = db.query(EmployeeDB).filter(EmployeeDB.employee_id == data.employee_id).first()
+    _notify_admins(new_leave, emp.employee_name if emp else f"Employee #{data.employee_id}", db)
+    return new_leave
 
 
 def get_employee_leaves(emp_id: int, db: Session) -> List[LeaveDB]:

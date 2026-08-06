@@ -121,6 +121,41 @@ def send_leave_status_email(to: str, emp_name: str, status: str, leave_date: str
     _send(to=to, subject=f"Leave Request {label} – {leave_date}", html=_wrap(body))
 
 
+def send_leave_applied_email(to: str, admin_name: str, emp_name: str, leave_type: str, leave_date: str, day_type: str, reason: str | None):
+    reason_row = (
+        f"""<tr>
+            <td style="padding:10px 14px;color:#6b7280;font-size:13px;white-space:nowrap;font-weight:500;">Reason</td>
+            <td style="padding:10px 14px;color:#111827;font-size:13px;">{reason}</td>
+        </tr>"""
+        if reason else ""
+    )
+    body = f"""
+        <p style="margin:0 0 20px;color:#374151;font-size:14px;">Hi <strong>{admin_name}</strong>,</p>
+        <p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.6;">
+            <strong>{emp_name}</strong> has applied for leave and is awaiting approval.
+        </p>
+        <div style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:20px;">
+            <table style="width:100%;border-collapse:collapse;">
+                <tbody>
+                    <tr>
+                        <td style="padding:10px 14px;color:#6b7280;font-size:13px;white-space:nowrap;font-weight:500;">Date</td>
+                        <td style="padding:10px 14px;color:#111827;font-size:13px;">{leave_date}</td>
+                    </tr>
+                    <tr style="background:#f9fafb;">
+                        <td style="padding:10px 14px;color:#6b7280;font-size:13px;white-space:nowrap;font-weight:500;">Type</td>
+                        <td style="padding:10px 14px;color:#111827;font-size:13px;text-transform:capitalize;">{leave_type} · {day_type.replace('_', ' ')}</td>
+                    </tr>
+                    {reason_row}
+                </tbody>
+            </table>
+        </div>
+        <a href="{config.ADMIN_PORTAL_URL}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;">
+            Review Leave Request
+        </a>
+    """
+    _send(to=to, subject=f"New Leave Request – {emp_name} ({leave_date})", html=_wrap(body))
+
+
 def send_payslip_email(to: str, emp_name: str, month_name: str, year: int, gross: float, deductions: float, net: float):
     body = f"""
         <p style="margin:0 0 20px;color:#374151;font-size:14px;">Hi <strong>{emp_name}</strong>,</p>
